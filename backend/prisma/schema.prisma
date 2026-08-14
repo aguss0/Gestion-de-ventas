@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Cliente {
@@ -33,7 +33,7 @@ model Articulo {
   nombre      String
   descripcion String?
   unidadCaja  String?  @map("unidad_caja")
-  precio      Decimal  @db.Decimal(12, 2)
+  precio      Float  
   activo      Boolean  @default(true)
   creadoEn    DateTime @default(now()) @map("creado_en")
 
@@ -85,8 +85,8 @@ model DetallePedido {
   pedidoId   Int     @map("pedido_id")
   articuloId Int     @map("articulo_id")
   cantidad   Int
-  precio     Decimal @db.Decimal(12, 2)
-  subtotal   Decimal @db.Decimal(12, 2)
+  precio     Float 
+  subtotal   Float 
 
   pedido   Pedido   @relation(fields: [pedidoId], references: [id])
   articulo Articulo @relation(fields: [articuloId], references: [id])
