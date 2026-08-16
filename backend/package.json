@@ -19,8 +19,11 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "pdfreader": "^3.0.8",
     "prisma": "^5.22.0",
-    "serve-static": "^2.2.1"
+    "serve-static": "^2.2.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

@@ -8,17 +8,76 @@ import { clienteService, articuloService, vendedorService } from "../../services
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
 
+function BuscadorDropdown({ opciones, valor, onSeleccionar, placeholder, renderOpcion, renderValor }) {
+  const [buscar, setBuscar]   = useState("");
+  const [abierto, setAbierto] = useState(false);
+
+  const filtradas = opciones.filter(o =>
+    renderValor(o).toLowerCase().includes(buscar.toLowerCase())
+  );
+
+  const seleccionado = opciones.find(o => o.id === Number(valor));
+
+  const inputStyle = {
+    width: "100%", padding: "8px 10px",
+    border: "1px solid var(--border)", borderRadius: "var(--radius)",
+    fontSize: 13, fontFamily: "inherit",
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        style={inputStyle}
+        placeholder={seleccionado ? renderValor(seleccionado) : placeholder}
+        value={abierto ? buscar : (seleccionado ? renderValor(seleccionado) : "")}
+        onChange={e => { setBuscar(e.target.value); setAbierto(true); }}
+        onFocus={() => { setAbierto(true); setBuscar(""); }}
+        onBlur={() => setTimeout(() => setAbierto(false), 200)}
+      />
+      {abierto && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0,
+          background: "#fff", border: "1px solid var(--border)",
+          borderRadius: 6, maxHeight: 220, overflowY: "auto",
+          zIndex: 50, boxShadow: "0 4px 12px rgba(0,0,0,.1)",
+        }}>
+          {filtradas.length === 0 && (
+            <div style={{ padding: "9px 12px", color: "var(--muted)", fontSize: 13 }}>No se encontraron resultados</div>
+          )}
+          {filtradas.map(o => (
+            <div
+              key={o.id}
+              onMouseDown={() => { onSeleccionar(o); setBuscar(""); setAbierto(false); }}
+              style={{
+                padding: "9px 12px", cursor: "pointer", fontSize: 13,
+                background: valor === String(o.id) ? "#eff6ff" : "#fff",
+                borderBottom: "1px solid var(--border)",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--bg)"}
+              onMouseLeave={e => e.currentTarget.style.background = valor === String(o.id) ? "#eff6ff" : "#fff"}
+            >
+              {renderOpcion(o)}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function NuevoPedido() {
-  const navigate     = useNavigate();
-  const queryClient  = useQueryClient();
-  const [clienteId, setClienteId]   = useState("");
-  const [vendedorId, setVendedorId] = useState("");
-  const [fecha, setFecha]           = useState(new Date().toISOString().split("T")[0]);
-  const [obs, setObs]               = useState("");
-  const [items, setItems]           = useState([]);
-  const [articuloId, setArticuloId] = useState("");
-  const [cantidad, setCantidad]     = useState(1);
+  const navigate    = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [clienteId, setClienteId]       = useState("");
+  const [vendedorId, setVendedorId]     = useState("");
+  const [fecha, setFecha]               = useState(new Date().toISOString().split("T")[0]);
+  const [obs, setObs]                   = useState("");
+  const [items, setItems]               = useState([]);
+  const [articuloId, setArticuloId]     = useState("");
+  const [cantidad, setCantidad]         = useState(1);
   const [precioCustom, setPrecioCustom] = useState("");
+  const [obsItem, setObsItem]           = useState("");
 
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
@@ -39,30 +98,27 @@ export function NuevoPedido() {
       setItems(nuevos);
     } else {
       setItems([...items, {
-        articuloId: articulo.id,
-        nombre:     articulo.nombre,
-        unidadCaja: articulo.unidadCaja,
-        cantidad:   Number(cantidad),
+        articuloId:    articulo.id,
+        nombre:        articulo.nombre,
+        unidadCaja:    articulo.unidadCaja,
+        cantidad:      Number(cantidad),
         precio,
-        subtotal:   precio * Number(cantidad),
+        subtotal:      precio * Number(cantidad),
+        observaciones: obsItem || null,
       }]);
     }
-    setArticuloId(""); setCantidad(1); setPrecioCustom("");
+    setArticuloId(""); setCantidad(1); setPrecioCustom(""); setObsItem("");
   };
 
-  const quitarItem = (articuloId) => setItems(items.filter(i => i.articuloId !== articuloId));
-
-  const editarCantidad = (articuloId, nueva) => {
+  const quitarItem    = (id) => setItems(items.filter(i => i.articuloId !== id));
+  const editarCantidad = (id, nueva) => {
     if (nueva < 1) return;
-    setItems(items.map(i => i.articuloId === articuloId
-      ? { ...i, cantidad: nueva, subtotal: i.precio * nueva }
-      : i
-    ));
+    setItems(items.map(i => i.articuloId === id ? { ...i, cantidad: nueva, subtotal: i.precio * nueva } : i));
   };
 
   const { mutate: crear, isLoading } = useMutation({
     mutationFn: () => pedidoService.crear({
-      clienteId: Number(clienteId),
+      clienteId:  Number(clienteId),
       vendedorId: vendedorId ? Number(vendedorId) : null,
       fecha, items, observaciones: obs || undefined,
     }),
@@ -87,10 +143,23 @@ export function NuevoPedido() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
               <label style={labelStyle}>Cliente *</label>
-              <select style={inputStyle} value={clienteId} onChange={e => setClienteId(e.target.value)} required>
-                <option value="">— Seleccionar —</option>
-                {clientes.filter(c => c.activo).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+              <BuscadorDropdown
+                opciones={clientes.filter(c => c.activo)}
+                valor={clienteId}
+                placeholder="Buscar cliente..."
+                onSeleccionar={(c) => {
+                  setClienteId(String(c.id));
+                  if (c.vendedorId) setVendedorId(String(c.vendedorId));
+                  else setVendedorId("");
+                }}
+                renderValor={(c) => c.nombre}
+                renderOpcion={(c) => (
+                  <div>
+                    <div style={{ fontWeight: 500 }}>{c.nombre}</div>
+                    {c.vendedor && <div style={{ fontSize: 11, color: "var(--muted)" }}>Vendedor: {c.vendedor.nombre}</div>}
+                  </div>
+                )}
+              />
             </div>
             <div>
               <label style={labelStyle}>Vendedor</label>
@@ -105,7 +174,7 @@ export function NuevoPedido() {
             </div>
           </div>
           <div style={{ marginTop: 12 }}>
-            <label style={labelStyle}>Observaciones</label>
+            <label style={labelStyle}>Observaciones del pedido</label>
             <input style={inputStyle} value={obs} onChange={e => setObs(e.target.value)} placeholder="Opcional…" />
           </div>
         </div>
@@ -117,10 +186,21 @@ export function NuevoPedido() {
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 10, alignItems: "flex-end" }}>
               <div>
                 <label style={labelStyle}>Artículo *</label>
-                <select style={inputStyle} value={articuloId} onChange={e => { setArticuloId(e.target.value); setPrecioCustom(""); }}>
-                  <option value="">— Seleccionar —</option>
-                  {articulos.filter(a => a.activo).map(a => <option key={a.id} value={a.id}>{a.nombre} {a.unidadCaja ? `(${a.unidadCaja})` : ""}</option>)}
-                </select>
+                <BuscadorDropdown
+                  opciones={articulos.filter(a => a.activo)}
+                  valor={articuloId}
+                  placeholder="Buscar artículo..."
+                  onSeleccionar={(a) => { setArticuloId(String(a.id)); setPrecioCustom(""); }}
+                  renderValor={(a) => a.nombre}
+                  renderOpcion={(a) => (
+                    <div>
+                      <div style={{ fontWeight: 500 }}>{a.nombre}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        {a.unidadCaja && `${a.unidadCaja} · `}{fmt(a.precio)}
+                      </div>
+                    </div>
+                  )}
+                />
               </div>
               <div>
                 <label style={labelStyle}>Cantidad</label>
@@ -133,6 +213,15 @@ export function NuevoPedido() {
               <button type="submit" style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
                 + Agregar
               </button>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <label style={labelStyle}>Observaciones del artículo</label>
+              <input
+                style={inputStyle}
+                value={obsItem}
+                onChange={e => setObsItem(e.target.value)}
+                placeholder="Opcional…"
+              />
             </div>
           </form>
         </div>
@@ -152,7 +241,12 @@ export function NuevoPedido() {
               <tbody>
                 {items.map(item => (
                   <tr key={item.articuloId} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td style={{ padding: "8px" }}>{item.nombre}</td>
+                    <td style={{ padding: "8px" }}>
+                      <div>{item.nombre}</div>
+                      {item.observaciones && (
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>📝 {item.observaciones}</div>
+                      )}
+                    </td>
                     <td style={{ padding: "8px", color: "var(--muted)", fontSize: 12 }}>{item.unidadCaja || "—"}</td>
                     <td style={{ padding: "8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

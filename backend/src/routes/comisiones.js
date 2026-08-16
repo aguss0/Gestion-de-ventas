@@ -23,16 +23,42 @@ router.get("/resumen", async (_req, res) => {
   for (const c of comisiones) {
     const nombre = c.vendedor?.nombre || "Sin vendedor";
     if (!resumen[nombre]) {
-      resumen[nombre] = { vendedor: nombre, comisionMiguel: 0, comisionGerardo: 0, comisionTurko: 0, plusTurko: 0, total: 0 };
+      resumen[nombre] = {
+        vendedor:        nombre,
+        comisionMiguel:  0,
+        comisionGerardo: 0,
+        comisionTurko:   0,
+        plusTurko:       0,
+        totalCobrado:    0,
+        totalPendiente:  0,
+      };
     }
+    const totalComision = c.comisionMiguel + c.comisionGerardo + c.comisionTurko;
     resumen[nombre].comisionMiguel  += c.comisionMiguel;
     resumen[nombre].comisionGerardo += c.comisionGerardo;
     resumen[nombre].comisionTurko   += c.comisionTurko;
     resumen[nombre].plusTurko       += c.plusTurko;
-    resumen[nombre].total           += c.comisionMiguel + c.comisionGerardo + c.comisionTurko;
+    if (c.cobrado) {
+      resumen[nombre].totalCobrado   += totalComision;
+    } else {
+      resumen[nombre].totalPendiente += totalComision;
+    }
   }
 
   res.json(Object.values(resumen));
+});
+
+// PATCH marcar cobrado/pendiente
+router.patch("/:id/cobrado", async (req, res) => {
+  const { cobrado } = req.body;
+  const data = await prisma.comision.update({
+    where: { id: Number(req.params.id) },
+    data:  {
+      cobrado,
+      fechaCobro: cobrado ? new Date() : null,
+    },
+  });
+  res.json(data);
 });
 
 module.exports = router;

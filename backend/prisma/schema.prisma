@@ -81,19 +81,21 @@ model Pedido {
 }
 
 model DetallePedido {
-  id         Int     @id @default(autoincrement())
-  pedidoId   Int     @map("pedido_id")
-  articuloId Int     @map("articulo_id")
-  cantidad   Int
-  precio     Float 
-  subtotal   Float 
+  id               Int     @id @default(autoincrement())
+  pedidoId         Int     @map("pedido_id")
+  articuloId       Int     @map("articulo_id")
+  cantidad         Int
+  precio           Float
+  subtotal         Float
+  faltante         Boolean @default(false)
+  cantidadFaltante Int     @default(0) @map("cantidad_faltante")
+  observaciones    String?
 
   pedido   Pedido   @relation(fields: [pedidoId], references: [id])
   articulo Articulo @relation(fields: [articuloId], references: [id])
 
   @@map("detalle_pedidos")
 }
-
 model Pago {
   id            Int      @id @default(autoincrement())
   pedidoId      Int      @map("pedido_id")
@@ -119,6 +121,8 @@ model Comision {
   comisionTurko   Float    @default(0) @map("comision_turko")
   plusTurko       Float    @default(0) @map("plus_turko")
   metodo          String?
+  cobrado         Boolean  @default(false)
+  fechaCobro      DateTime? @map("fecha_cobro")
   creadoEn        DateTime @default(now()) @map("creado_en")
 
   pedido   Pedido   @relation(fields: [pedidoId], references: [id])
