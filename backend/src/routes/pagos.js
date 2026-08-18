@@ -20,7 +20,6 @@ router.post("/", async (req, res) => {
   }
 
   const resultado = await prisma.$transaction(async (tx) => {
-    // Verificar pedido
     const pedido = await tx.pedido.findUnique({ where: { id: Number(pedidoId) } });
     if (!pedido) throw { status: 404, message: "Pedido no encontrado" };
 
@@ -36,58 +35,15 @@ router.post("/", async (req, res) => {
       },
     });
 
-    // Actualizar totales del pedido
+    // Actualizar saldo del pedido
     const nuevoTotalPagado = pedido.totalPagado + Number(monto);
-    const nuevoSaldo       = pedido.total - nuevoTotalPagado;
-
     await tx.pedido.update({
       where: { id: pedido.id },
       data: {
         totalPagado: nuevoTotalPagado,
-        saldo:       nuevoSaldo < 0 ? 0 : nuevoSaldo,
+        saldo:       Math.max(0, pedido.total - nuevoTotalPagado),
       },
     });
-
-    // Calcular comisión si el pedido tiene vendedor
-    if (pedido.vendedorId) {
-      const vendedor = await tx.vendedor.findUnique({ where: { id: pedido.vendedorId } });
-      const importe  = pedido.total;
-      const pct      = vendedor?.comisionPct || 6;
-
-      // Lógica de comisiones según el Excel
-      // Miguel: 6%, Gerardo: 4%, Turko: 4% + plus si es Echeq
-      let comisionMiguel  = 0;
-      let comisionGerardo = 0;
-      let comisionTurko   = 0;
-      let plusTurko       = 0;
-
-      const nombre = vendedor?.nombre?.toLowerCase() || "";
-      if (nombre.includes("miguel")) {
-        comisionMiguel = importe * 0.06;
-      } else if (nombre.includes("gerardo")) {
-        comisionMiguel  = importe * 0.06;
-        comisionGerardo = importe * 0.04;
-      } else if (nombre.includes("turko")) {
-        comisionMiguel = importe * 0.06;
-        comisionTurko  = importe * 0.04;
-        if (metodo === "Echeq") {
-          plusTurko = importe * 0.10;
-        }
-      }
-
-      // Upsert comisión
-      await tx.comision.upsert({
-        where:  { pedidoId: pedido.id },
-        update: { comisionMiguel, comisionGerardo, comisionTurko, plusTurko, metodo },
-        create: {
-          pedidoId:   pedido.id,
-          vendedorId: pedido.vendedorId,
-          importe,
-          comisionMiguel, comisionGerardo, comisionTurko, plusTurko,
-          metodo,
-        },
-      });
-    }
 
     return pago;
   });

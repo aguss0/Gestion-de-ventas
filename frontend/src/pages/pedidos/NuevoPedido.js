@@ -75,9 +75,10 @@ export function NuevoPedido() {
   const [obs, setObs]                   = useState("");
   const [items, setItems]               = useState([]);
   const [articuloId, setArticuloId]     = useState("");
-  const [cantidad, setCantidad]         = useState(1);
+  const [cantidad, setCantidad]         = useState("");
   const [precioCustom, setPrecioCustom] = useState("");
   const [obsItem, setObsItem]           = useState("");
+  const [nroOrden, setNroOrden] = useState("");
 
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
@@ -90,6 +91,7 @@ export function NuevoPedido() {
   const agregarItem = (e) => {
     e.preventDefault();
     if (!articulo) return toast.error("Seleccioná un artículo");
+      if (!cantidad || Number(cantidad) < 1) return toast.error("La cantidad debe ser mayor a 0");
     const existe = items.findIndex(i => i.articuloId === articulo.id);
     if (existe >= 0) {
       const nuevos = [...items];
@@ -107,7 +109,7 @@ export function NuevoPedido() {
         observaciones: obsItem || null,
       }]);
     }
-    setArticuloId(""); setCantidad(1); setPrecioCustom(""); setObsItem("");
+    setArticuloId(""); setCantidad(""); setPrecioCustom(""); setObsItem("");
   };
 
   const quitarItem    = (id) => setItems(items.filter(i => i.articuloId !== id));
@@ -118,6 +120,7 @@ export function NuevoPedido() {
 
   const { mutate: crear, isLoading } = useMutation({
     mutationFn: () => pedidoService.crear({
+      nroOrden:   nroOrden ? Number(nroOrden) : undefined,
       clienteId:  Number(clienteId),
       vendedorId: vendedorId ? Number(vendedorId) : null,
       fecha, items, observaciones: obs || undefined,
@@ -169,6 +172,17 @@ export function NuevoPedido() {
               </select>
             </div>
             <div>
+              <label style={labelStyle}>N° Orden</label>
+              <input
+                type="number"
+                min="1"
+                style={inputStyle}
+                value={nroOrden}
+                onChange={e => setNroOrden(e.target.value)}
+                placeholder="Automático"
+              />
+            </div>
+            <div>
               <label style={labelStyle}>Fecha</label>
               <input type="date" style={inputStyle} value={fecha} onChange={e => setFecha(e.target.value)} />
             </div>
@@ -183,7 +197,7 @@ export function NuevoPedido() {
         <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 16 }}>
           <div style={{ fontWeight: 500, marginBottom: 14 }}>Agregar artículo</div>
           <form onSubmit={agregarItem}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 10, alignItems: "flex-end" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, alignItems: "flex-end" }}>
               <div>
                 <label style={labelStyle}>Artículo *</label>
                 <BuscadorDropdown
@@ -207,8 +221,10 @@ export function NuevoPedido() {
                 <input type="number" min="1" style={inputStyle} value={cantidad} onChange={e => setCantidad(e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Precio {articulo ? `(${fmt(articulo.precio)})` : ""}</label>
-                <input type="number" min="0" style={inputStyle} value={precioCustom} onChange={e => setPrecioCustom(e.target.value)} placeholder="Automático" />
+                <label style={labelStyle}>
+                  Precio {articulo ? <strong style={{ color: "var(--primary)" }}>({fmt(articulo.precio)})</strong> : ""}
+                </label>
+                <input type="text" inputMode="numeric" style={inputStyle} value={precioCustom} onChange={e => setPrecioCustom(e.target.value)} placeholder="Automático"/>
               </div>
               <button type="submit" style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
                 + Agregar

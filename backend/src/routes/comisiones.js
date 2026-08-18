@@ -28,20 +28,18 @@ router.get("/resumen", async (_req, res) => {
         comisionMiguel:  0,
         comisionGerardo: 0,
         comisionTurko:   0,
-        plusTurko:       0,
         totalCobrado:    0,
         totalPendiente:  0,
       };
     }
-    const totalComision = c.comisionMiguel + c.comisionGerardo + c.comisionTurko;
+    const total = c.comisionMiguel + c.comisionGerardo + c.comisionTurko;
     resumen[nombre].comisionMiguel  += c.comisionMiguel;
     resumen[nombre].comisionGerardo += c.comisionGerardo;
     resumen[nombre].comisionTurko   += c.comisionTurko;
-    resumen[nombre].plusTurko       += c.plusTurko;
     if (c.cobrado) {
-      resumen[nombre].totalCobrado   += totalComision;
+      resumen[nombre].totalCobrado   += total;
     } else {
-      resumen[nombre].totalPendiente += totalComision;
+      resumen[nombre].totalPendiente += total;
     }
   }
 

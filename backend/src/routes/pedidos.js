@@ -33,16 +33,26 @@ router.get("/:id", async (req, res) => {
 
 // POST crear pedido con detalle
 router.post("/", async (req, res) => {
-  const { clienteId, vendedorId, fecha, items, observaciones } = req.body;
+  const { clienteId, vendedorId, fecha, items, observaciones, nroOrden: nroOrdenBody } = req.body;
   if (!clienteId || !items?.length) {
     return res.status(400).json({ error: "Cliente e items requeridos" });
   }
 
-  const total    = items.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-  const ultimo   = await prisma.pedido.findFirst({ orderBy: { nroOrden: "desc" } });
-  const nroOrden = (ultimo?.nroOrden || 0) + 1;
+  const total  = items.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+
+  // Número de orden: manual si viene en el body, automático si no
+  let nroOrden;
+  if (nroOrdenBody) {
+    nroOrden = Number(nroOrdenBody);
+    const existe = await prisma.pedido.findUnique({ where: { nroOrden } });
+    if (existe) return res.status(400).json({ error: `Ya existe un pedido con el número ${nroOrden}` });
+  } else {
+    const ultimo = await prisma.pedido.findFirst({ orderBy: { nroOrden: "desc" } });
+    nroOrden = (ultimo?.nroOrden || 0) + 1;
+  }
 
   const pedido = await prisma.$transaction(async (tx) => {
+    // 1. Crear pedido
     const p = await tx.pedido.create({
       data: {
         nroOrden,
@@ -55,16 +65,48 @@ router.post("/", async (req, res) => {
       },
     });
 
+    // 2. Crear detalle
     await tx.detallePedido.createMany({
-    data: items.map(i => ({
-      pedidoId:     p.id,
-      articuloId:   Number(i.articuloId),
-      cantidad:     Number(i.cantidad),
-      precio:       Number(i.precio),
-      subtotal:     Number(i.precio) * Number(i.cantidad),
-      observaciones: i.observaciones || null,
-    })),
-});
+      data: items.map(i => ({
+        pedidoId:      p.id,
+        articuloId:    Number(i.articuloId),
+        cantidad:      Number(i.cantidad),
+        precio:        Number(i.precio),
+        subtotal:      Number(i.precio) * Number(i.cantidad),
+        observaciones: i.observaciones || null,
+      })),
+    });
+
+    // 3. Calcular y crear comisión si tiene vendedor
+    if (vendedorId) {
+      const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
+      const nombre   = vendedor?.nombre?.toLowerCase() || "";
+
+      let comisionMiguel  = 0;
+      let comisionGerardo = 0;
+      let comisionTurko   = 0;
+
+      if (nombre.includes("miguel")) {
+        comisionMiguel = total * 0.06;
+      } else if (nombre.includes("gerardo")) {
+        comisionMiguel  = total * 0.06;
+        comisionGerardo = total * 0.04;
+      } else if (nombre.includes("turko")) {
+        comisionMiguel = total * 0.06;
+        comisionTurko  = total * 0.04;
+      }
+
+      await tx.comision.create({
+        data: {
+          pedidoId:  p.id,
+          vendedorId: Number(vendedorId),
+          importe:    total,
+          comisionMiguel,
+          comisionGerardo,
+          comisionTurko,
+        },
+      });
+    }
 
     return p;
   });

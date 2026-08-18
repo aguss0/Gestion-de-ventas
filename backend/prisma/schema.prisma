@@ -120,7 +120,6 @@ model Comision {
   comisionGerardo Float    @default(0) @map("comision_gerardo")
   comisionTurko   Float    @default(0) @map("comision_turko")
   plusTurko       Float    @default(0) @map("plus_turko")
-  metodo          String?
   cobrado         Boolean  @default(false)
   fechaCobro      DateTime? @map("fecha_cobro")
   creadoEn        DateTime @default(now()) @map("creado_en")

@@ -101,12 +101,12 @@ export function Comisiones() {
 
   // Columnas según tab
   const columnas = tab === "General"
-    ? ["Sel.", "Cobrado", "OC", "Cliente", "Vendedor", "Importe", "Com. Miguel", "Com. Gerardo", "Com. Turko", "Plus Turko", "Método", "Fecha cobro"]
-    : tab === "Miguel"
-    ? ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Miguel", "Método", "Fecha cobro"]
-    : tab === "Gerardo"
-    ? ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Gerardo", "Método", "Fecha cobro"]
-    : ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Turko", "Plus Turko", "Método", "Fecha cobro"];
+  ? ["Sel.", "Cobrado", "OC", "Cliente", "Vendedor", "Importe", "Com. Miguel", "Com. Gerardo", "Com. Turko", "Fecha cobro"]
+  : tab === "Miguel"
+  ? ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Miguel", "Fecha cobro"]
+  : tab === "Gerardo"
+  ? ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Gerardo", "Fecha cobro"]
+  : ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Turko", "Fecha cobro"];
 
   return (
     <Layout titulo="Comisiones">
@@ -268,7 +268,6 @@ export function Comisiones() {
                 {(tab === "General" || tab === "Gerardo") && <td style={{ padding: "9px 14px" }}>{c.comisionGerardo > 0 ? fmt(c.comisionGerardo) : "—"}</td>}
                 {(tab === "General" || tab === "Turko")   && <td style={{ padding: "9px 14px" }}>{c.comisionTurko   > 0 ? fmt(c.comisionTurko)   : "—"}</td>}
                 {(tab === "General" || tab === "Turko")   && <td style={{ padding: "9px 14px", color: "var(--success)" }}>{c.plusTurko > 0 ? fmt(c.plusTurko) : "—"}</td>}
-                <td style={{ padding: "9px 14px" }}>{c.metodo || "—"}</td>
                 <td style={{ padding: "9px 14px", color: "var(--muted)", fontSize: 12 }}>
                   {c.fechaCobro ? new Date(c.fechaCobro).toLocaleDateString("es-AR") : "—"}
                 </td>
