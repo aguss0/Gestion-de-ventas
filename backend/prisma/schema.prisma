@@ -15,7 +15,7 @@ model Cliente {
   direccion  String?
   barrio     String?
   telefono   String?
-  email      String?  @unique
+  email      String?
   tipo       String?
   activo     Boolean  @default(true)
   creadoEn   DateTime @default(now()) @map("creado_en")

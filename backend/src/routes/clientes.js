@@ -13,7 +13,16 @@ router.post("/", async (req, res) => {
   const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId } = req.body;
   if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
   const data = await prisma.cliente.create({
-    data: { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId: vendedorId ? Number(vendedorId) : null },
+    data: {
+      nombre,
+      cuit:       cuit       || null,
+      email:      email      || null,
+      telefono:   telefono   || null,
+      direccion:  direccion  || null,
+      barrio:     barrio     || null,
+      tipo:       tipo       || null,
+      vendedorId: vendedorId ? Number(vendedorId) : null,
+    },
   });
   res.status(201).json(data);
 });
