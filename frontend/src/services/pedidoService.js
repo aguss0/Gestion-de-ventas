@@ -20,6 +20,6 @@ export const estadoCuentaService = {
 };
 
 export const comisionService = {
-  listar:  () => api.get("/comisiones").then(r => r.data),
-  resumen: () => api.get("/comisiones/resumen").then(r => r.data),
+  listar:  (params = {}) => api.get("/comisiones", { params }).then(r => r.data),
+  resumen: (params = {}) => api.get("/comisiones/resumen", { params }).then(r => r.data),
 };

@@ -1,11 +1,30 @@
 const router = require("express").Router();
-const prisma = require("../utils/prisma");
+const prisma  = require("../utils/prisma");
 
-// GET todas las comisiones
-router.get("/", async (_req, res) => {
+// GET todas las comisiones con filtros opcionales
+router.get("/", async (req, res) => {
+  const { desde, hasta } = req.query;
+
+  let pedidoIds = null;
+  if (desde || hasta) {
+    const pedidos = await prisma.pedido.findMany({
+      where: {
+        fecha: {
+          ...(desde ? { gte: new Date(desde) } : {}),
+          ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
+        }
+      },
+      select: { id: true },
+    });
+    pedidoIds = pedidos.map(p => p.id);
+  }
+
+  const where = pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {};
+
   const data = await prisma.comision.findMany({
+    where,
     include: {
-      pedido:  { include: { cliente: true } },
+      pedido:   { include: { cliente: true } },
       vendedor: true,
     },
     orderBy: { creadoEn: "desc" },
@@ -13,37 +32,55 @@ router.get("/", async (_req, res) => {
   res.json(data);
 });
 
-// GET resumen por vendedor
-router.get("/resumen", async (_req, res) => {
-  const comisiones = await prisma.comision.findMany({
-    include: { vendedor: true },
-  });
+// GET resumen por vendedor con filtros opcionales
+router.get("/resumen", async (req, res) => {
+  const { desde, hasta } = req.query;
 
-  const resumen = {};
+  let pedidoIds = null;
+  if (desde || hasta) {
+    const pedidos = await prisma.pedido.findMany({
+      where: {
+        fecha: {
+          ...(desde ? { gte: new Date(desde) } : {}),
+          ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
+        }
+      },
+      select: { id: true },
+    });
+    pedidoIds = pedidos.map(p => p.id);
+  }
+
+  const where = pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {};
+
+  const comisiones = await prisma.comision.findMany({ where });
+
+  // Sumar por persona, no por vendedor del pedido
+  const resumen = {
+    Miguel:  { vendedor: "Miguel",  total: 0, cobrado: 0, pendiente: 0 },
+    Gerardo: { vendedor: "Gerardo", total: 0, cobrado: 0, pendiente: 0 },
+    Turko:   { vendedor: "Turko",   total: 0, cobrado: 0, pendiente: 0 },
+  };
+
   for (const c of comisiones) {
-    const nombre = c.vendedor?.nombre || "Sin vendedor";
-    if (!resumen[nombre]) {
-      resumen[nombre] = {
-        vendedor:        nombre,
-        comisionMiguel:  0,
-        comisionGerardo: 0,
-        comisionTurko:   0,
-        totalCobrado:    0,
-        totalPendiente:  0,
-      };
+    if (c.comisionMiguel > 0) {
+      resumen.Miguel.total += c.comisionMiguel;
+      if (c.cobrado) resumen.Miguel.cobrado   += c.comisionMiguel;
+      else           resumen.Miguel.pendiente += c.comisionMiguel;
     }
-    const total = c.comisionMiguel + c.comisionGerardo + c.comisionTurko;
-    resumen[nombre].comisionMiguel  += c.comisionMiguel;
-    resumen[nombre].comisionGerardo += c.comisionGerardo;
-    resumen[nombre].comisionTurko   += c.comisionTurko;
-    if (c.cobrado) {
-      resumen[nombre].totalCobrado   += total;
-    } else {
-      resumen[nombre].totalPendiente += total;
+    if (c.comisionGerardo > 0) {
+      resumen.Gerardo.total += c.comisionGerardo;
+      if (c.cobrado) resumen.Gerardo.cobrado   += c.comisionGerardo;
+      else           resumen.Gerardo.pendiente += c.comisionGerardo;
+    }
+    if (c.comisionTurko > 0) {
+      resumen.Turko.total += c.comisionTurko;
+      if (c.cobrado) resumen.Turko.cobrado   += c.comisionTurko;
+      else           resumen.Turko.pendiente += c.comisionTurko;
     }
   }
 
-  res.json(Object.values(resumen));
+  // Solo devolver los que tienen algo
+  res.json(Object.values(resumen).filter(v => v.total > 0));
 });
 
 // PATCH marcar cobrado/pendiente

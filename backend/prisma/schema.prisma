@@ -33,8 +33,11 @@ model Articulo {
   nombre      String
   descripcion String?
   unidadCaja  String?  @map("unidad_caja")
-  precio      Float  
+  precio      Float
   activo      Boolean  @default(true)
+  manejaStock Boolean  @default(false) @map("maneja_stock")
+  stock       Int      @default(0)
+  stockMinimo Int      @default(0) @map("stock_minimo")
   creadoEn    DateTime @default(now()) @map("creado_en")
 
   detallePedidos DetallePedido[]

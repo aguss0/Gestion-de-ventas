@@ -7,19 +7,32 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { codigo, nombre, descripcion, unidadCaja, precio } = req.body;
+  const { codigo, nombre, descripcion, unidadCaja, precio, manejaStock, stock, stockMinimo } = req.body;
   if (!nombre || !precio) return res.status(400).json({ error: "Nombre y precio requeridos" });
   const data = await prisma.articulo.create({
-    data: { codigo, nombre, descripcion, unidadCaja, precio: Number(precio) },
+    data: {
+      codigo, nombre, descripcion, unidadCaja,
+      precio:      Number(precio),
+      manejaStock: Boolean(manejaStock),
+      stock:       Number(stock || 0),
+      stockMinimo: Number(stockMinimo || 0),
+    },
   });
   res.status(201).json(data);
 });
 
 router.patch("/:id", async (req, res) => {
-  const { codigo, nombre, descripcion, unidadCaja, precio, activo } = req.body;
+  const { codigo, nombre, descripcion, unidadCaja, precio, activo, manejaStock, stock, stockMinimo } = req.body;
   const data = await prisma.articulo.update({
     where: { id: Number(req.params.id) },
-    data:  { codigo, nombre, descripcion, unidadCaja, precio: precio ? Number(precio) : undefined, activo },
+    data: {
+      codigo, nombre, descripcion, unidadCaja,
+      precio:      precio      ? Number(precio)      : undefined,
+      manejaStock: manejaStock !== undefined ? Boolean(manejaStock) : undefined,
+      stock:       stock       !== undefined ? Number(stock)        : undefined,
+      stockMinimo: stockMinimo !== undefined ? Number(stockMinimo)  : undefined,
+      activo,
+    },
   });
   res.json(data);
 });

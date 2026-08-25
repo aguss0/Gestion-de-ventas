@@ -77,36 +77,53 @@ router.post("/", async (req, res) => {
       })),
     });
 
-    // 3. Calcular y crear comisión si tiene vendedor
-    if (vendedorId) {
-      const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
-      const nombre   = vendedor?.nombre?.toLowerCase() || "";
-
-      let comisionMiguel  = 0;
-      let comisionGerardo = 0;
-      let comisionTurko   = 0;
-
-      if (nombre.includes("miguel")) {
-        comisionMiguel = total * 0.06;
-      } else if (nombre.includes("gerardo")) {
-        comisionMiguel  = total * 0.06;
-        comisionGerardo = total * 0.04;
-      } else if (nombre.includes("turko")) {
-        comisionMiguel = total * 0.06;
-        comisionTurko  = total * 0.04;
-      }
-
-      await tx.comision.create({
-        data: {
-          pedidoId:  p.id,
-          vendedorId: Number(vendedorId),
-          importe:    total,
-          comisionMiguel,
-          comisionGerardo,
-          comisionTurko,
-        },
+    // 3. Descontar stock de artículos que lo manejan
+    for (const item of items) {
+      const articulo = await tx.articulo.findUnique({
+        where: { id: Number(item.articuloId) },
       });
+      if (articulo?.manejaStock) {
+        if (articulo.stock < Number(item.cantidad)) {
+          throw { status: 400, message: `Stock insuficiente para ${articulo.nombre}. Disponible: ${articulo.stock}` };
+        }
+        await tx.articulo.update({
+          where: { id: articulo.id },
+          data:  { stock: articulo.stock - Number(item.cantidad) },
+        });
+      }
     }
+
+    // 4. Calcular y crear comisión si tiene vendedor
+    if (vendedorId) {
+    const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
+    const nombre   = vendedor?.nombre?.toLowerCase() || "";
+    const total_   = total;
+
+    let comisionMiguel  = 0;
+    let comisionGerardo = 0;
+    let comisionTurko   = 0;
+
+    if (nombre.includes("miguel")) {
+      comisionMiguel = total_ * 0.10;  // Miguel cobra 10% cuando es su venta
+    } else if (nombre.includes("gerardo")) {
+      comisionMiguel  = total_ * 0.06; // Miguel cobra 6% en ventas de otros
+      comisionGerardo = total_ * 0.04; // Gerardo cobra 4% en sus ventas
+    } else if (nombre.includes("turko")) {
+      comisionMiguel = total_ * 0.06;  // Miguel cobra 6% en ventas de otros
+      comisionTurko  = total_ * 0.04;  // Turko cobra 4% en sus ventas
+    }
+
+    await tx.comision.create({
+      data: {
+        pedidoId:   p.id,
+        vendedorId: Number(vendedorId),
+        importe:    total_,
+        comisionMiguel,
+        comisionGerardo,
+        comisionTurko,
+      },
+    });
+  }
 
     return p;
   });

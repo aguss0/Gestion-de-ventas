@@ -27,7 +27,7 @@ async function main() {
     let comisionTurko   = 0;
 
     if (nombre.includes("miguel")) {
-      comisionMiguel = total * 0.06;
+      comisionMiguel = total * 0.10;
     } else if (nombre.includes("gerardo")) {
       comisionMiguel  = total * 0.06;
       comisionGerardo = total * 0.04;

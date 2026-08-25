@@ -32,14 +32,18 @@ export function ABM({ titulo, queryKey, fetchFn, campos }) {
   const abrirEditar = (item) => { setEditando(item); setModal(true); };
   const cerrar      = () => { setModal(false); setEditando(null); };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const form = {};
-    campos.fields.forEach(f => {
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  const form = {};
+  campos.fields.forEach(f => {
+    if (f.type === "checkbox") {
+      form[f.key] = e.target[f.key].checked;
+    } else {
       form[f.key] = e.target[f.key].value || undefined;
-    });
-    guardar(form);
-  };
+    }
+  });
+  guardar(form);
+};
 
   const inputStyle = {
     width: "100%", padding: "8px 10px",
@@ -128,14 +132,23 @@ export function ABM({ titulo, queryKey, fetchFn, campos }) {
                   <label style={{ display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
                     {f.label}{f.required ? " *" : ""}
                   </label>
-                  <input
-                    name={f.key}
-                    type={f.type || "text"}
-                    defaultValue={editando?.[f.key] ?? ""}
-                    required={f.required}
-                    placeholder={f.placeholder}
-                    style={inputStyle}
-                  />
+                  {f.type === "checkbox" ? (
+                    <input
+                      name={f.key}
+                      type="checkbox"
+                      defaultChecked={editando?.[f.key] || false}
+                      style={{ width: 18, height: 18, cursor: "pointer" }}
+                    />
+                  ) : (
+                    <input
+                      name={f.key}
+                      type={f.type || "text"}
+                      defaultValue={editando?.[f.key] ?? ""}
+                      required={f.required}
+                      placeholder={f.placeholder}
+                      style={inputStyle}
+                    />
+                  )}
                 </div>
               ))}
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
