@@ -4,14 +4,26 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { pedidoService } from "../../services/pedidoService";
+import { useOrden } from "../../hooks/useOrden";
 
-function fmt(n) {
-  return "$" + Number(n || 0).toLocaleString("es-AR");
-}
+function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
 
 function fmtFecha(f) {
   if (!f) return "—";
-  return new Date(f).toLocaleDateString("es-AR");
+  const d = new Date(f);
+  return `${String(d.getUTCDate()).padStart(2,"0")}/${String(d.getUTCMonth()+1).padStart(2,"0")}/${d.getUTCFullYear()}`;
+}
+
+function ThOrdenable({ label, campo, orden, onToggle }) {
+  const activo = orden.campo === campo;
+  return (
+    <th
+      onClick={() => onToggle(campo)}
+      style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, color: activo ? "var(--primary)" : "var(--muted)", borderBottom: "2px solid var(--border)", fontWeight: 500, textTransform: "uppercase", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+    >
+      {label} {activo ? (orden.dir === "asc" ? "↑" : "↓") : "↕"}
+    </th>
+  );
 }
 
 export function Pedidos() {
@@ -22,6 +34,15 @@ export function Pedidos() {
     queryKey: ["pedidos"],
     queryFn:  pedidoService.listar,
   });
+
+ const activos = pedidos.filter(p => p.activo);
+  const [soloStock, setSoloStock] = useState(false);
+
+  const pedidosFiltrados = soloStock
+    ? activos.filter(p => p.detalle?.some(d => d.articulo?.manejaStock))
+    : activos;
+
+  const { datosordenados, orden, toggleOrden } = useOrden(pedidosFiltrados, { campo: "nroOrden", dir: "desc" });
 
   const { mutate: eliminar } = useMutation({
     mutationFn: (id) => pedidoService.eliminar(id),
@@ -49,19 +70,34 @@ export function Pedidos() {
         </button>
       }
     >
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={soloStock}
+            onChange={e => setSoloStock(e.target.checked)}
+          />
+          Solo pedidos con productos de stock
+        </label>
+      </div>
       <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
-              {["N° Orden", "Fecha", "Cliente", "Vendedor", "Total", "Pagado", "Saldo", "Acciones"].map(h => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "2px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>{h}</th>
-              ))}
+              <ThOrdenable label="N° Orden" campo="nroOrden"       orden={orden} onToggle={toggleOrden} />
+              <ThOrdenable label="Fecha"    campo="fecha"           orden={orden} onToggle={toggleOrden} />
+              <ThOrdenable label="Cliente"  campo="cliente.nombre"  orden={orden} onToggle={toggleOrden} />
+              <ThOrdenable label="Vendedor" campo="vendedor.nombre" orden={orden} onToggle={toggleOrden} />
+              <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "2px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>Total</th>
+              <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "2px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>Pagado</th>
+              <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "2px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>Saldo</th>
+              <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "2px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={8} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>Cargando…</td></tr>}
-            {!isLoading && pedidos.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No hay pedidos todavía</td></tr>}
-            {pedidos.filter(p => p.activo).map(p => (
+            {!isLoading && datosordenados.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No hay pedidos todavía</td></tr>}
+            {datosordenados.map(p => (
               <tr key={p.id}
                 style={{ borderBottom: "1px solid var(--border)" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--bg)"}

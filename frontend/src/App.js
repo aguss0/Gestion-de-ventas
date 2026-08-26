@@ -10,6 +10,8 @@ import { Pagos }         from "./pages/pagos/Pagos";
 import { EstadoCuenta }  from "./pages/estadocuenta/EstadoCuenta";
 import { Comisiones }    from "./pages/comisiones/Comisiones";
 import { DetallePedido } from "./pages/pedidos/DetallePedido";
+import { ComprasStock } from "./pages/comprasstock/ComprasStock";
+import { Rentabilidad } from "./pages/comprasstock/Rentabilidad";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ export default function App() {
           <Route path="/articulos"       element={<Articulos />} />
           <Route path="/vendedores"      element={<Vendedores />} />
           <Route path="/pedidos/:id" element={<DetallePedido />} />
+          <Route path="/comprasstock" element={<ComprasStock />} />
+          <Route path="/rentabilidad" element={<Rentabilidad />} />
         </Routes>
         <Toaster position="top-right" />
       </BrowserRouter>

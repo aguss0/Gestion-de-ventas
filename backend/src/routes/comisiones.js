@@ -24,10 +24,14 @@ router.get("/", async (req, res) => {
   const data = await prisma.comision.findMany({
     where,
     include: {
-      pedido:   { include: { cliente: true } },
+      pedido: {
+        include: {
+          cliente: true,
+          detalle: { include: { articulo: true } },
+        }
+      },
       vendedor: true,
     },
-    orderBy: { creadoEn: "desc" },
   });
   res.json(data);
 });

@@ -79,6 +79,7 @@ export function NuevoPedido() {
   const [precioCustom, setPrecioCustom] = useState("");
   const [obsItem, setObsItem]           = useState("");
   const [nroOrden, setNroOrden] = useState("");
+  const [descuento, setDescuento] = useState(0);
 
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
@@ -87,6 +88,9 @@ export function NuevoPedido() {
   const articulo = articulos.find(a => a.id === Number(articuloId));
   const precio   = precioCustom ? Number(precioCustom) : Number(articulo?.precio || 0);
   const total    = items.reduce((s, i) => s + i.subtotal, 0);
+  const precioConDescuento = precioCustom
+  ? Number(precioCustom)
+  : Number(articulo?.precio || 0) * (1 - Number(descuento) / 100);
 
   const agregarItem = (e) => {
     e.preventDefault();
@@ -104,12 +108,12 @@ export function NuevoPedido() {
         nombre:        articulo.nombre,
         unidadCaja:    articulo.unidadCaja,
         cantidad:      Number(cantidad),
-        precio,
-        subtotal:      precio * Number(cantidad),
+        precio:        precioConDescuento,
+        subtotal:      precioConDescuento * Number(cantidad),
         observaciones: obsItem || null,
       }]);
     }
-    setArticuloId(""); setCantidad(""); setPrecioCustom(""); setObsItem("");
+    setArticuloId(""); setCantidad(""); setPrecioCustom(""); setObsItem(""); setDescuento(0);
   };
 
   const quitarItem    = (id) => setItems(items.filter(i => i.articuloId !== id));
@@ -143,7 +147,7 @@ export function NuevoPedido() {
         {/* Datos del pedido */}
         <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 16 }}>
           <div style={{ fontWeight: 500, marginBottom: 14 }}>Datos del pedido</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "flex-end" }}>
             <div>
               <label style={labelStyle}>Cliente *</label>
               <BuscadorDropdown
@@ -197,7 +201,7 @@ export function NuevoPedido() {
         <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 16 }}>
           <div style={{ fontWeight: 500, marginBottom: 14 }}>Agregar artículo</div>
           <form onSubmit={agregarItem}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, alignItems: "flex-end" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "flex-end" }}>
               <div>
                 <label style={labelStyle}>Artículo *</label>
                 <BuscadorDropdown
@@ -218,29 +222,48 @@ export function NuevoPedido() {
               </div>
               <div>
                 <label style={labelStyle}>Cantidad</label>
-                <input type="number" min="1" style={inputStyle} value={cantidad} onChange={e => setCantidad(e.target.value)} />
+                <input type="number" min="1" style={inputStyle} value={cantidad} onChange={e => setCantidad(e.target.value)} placeholder="0" required />
               </div>
               <div>
                 <label style={labelStyle}>
                   Precio {articulo ? <strong style={{ color: "var(--primary)" }}>({fmt(articulo.precio)})</strong> : ""}
                 </label>
-                <input type="text" inputMode="numeric" style={inputStyle} value={precioCustom} onChange={e => setPrecioCustom(e.target.value)} placeholder="Automático"/>
+                <input type="text" inputMode="numeric" style={inputStyle} value={precioCustom} onChange={e => setPrecioCustom(e.target.value)} placeholder="Automático" />
+              </div>
+              <div>
+                <label style={labelStyle}>Descuento %</label>
+                <input
+                  type="number" min="0" max="100"
+                  style={inputStyle}
+                  value={descuento}
+                  onChange={e => setDescuento(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  placeholder="0"
+                />
               </div>
               <button type="submit" style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
                 + Agregar
               </button>
             </div>
-            <div style={{ marginTop: 10 }}>
-              <label style={labelStyle}>Observaciones del artículo</label>
-              <input
-                style={inputStyle}
-                value={obsItem}
-                onChange={e => setObsItem(e.target.value)}
-                placeholder="Opcional…"
-              />
-            </div>
-          </form>
-        </div>
+
+              {/* Preview descuento */}
+              {articulo && Number(descuento) > 0 && (
+                <div style={{ background: "#fef9c3", borderRadius: 6, padding: "6px 12px", marginTop: 8, fontSize: 12 }}>
+                  Precio con {descuento}% descuento: <strong style={{ color: "var(--success)" }}>${precioConDescuento.toLocaleString("es-AR")}</strong>
+                  {" · "}Ahorro: <strong style={{ color: "var(--danger)" }}>${(Number(articulo.precio) - precioConDescuento).toLocaleString("es-AR")}</strong>
+                </div>
+              )}
+
+              <div style={{ marginTop: 10 }}>
+                <label style={labelStyle}>Observaciones del artículo</label>
+                <input
+                  style={inputStyle}
+                  value={obsItem}
+                  onChange={e => setObsItem(e.target.value)}
+                  placeholder="Opcional…"
+                />
+              </div>
+            </form>
+          </div>
 
         {/* Items del pedido */}
         {items.length > 0 && (

@@ -18,6 +18,7 @@ app.use("/api/pagos",        require("./routes/pagos"));
 app.use("/api/estadocuenta", require("./routes/estadocuenta"));
 app.use("/api/comisiones",   require("./routes/comisiones"));
 app.use("/api/importar", require("./routes/importar"));
+app.use("/api/comprasstock", require("./routes/comprasstock"));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 

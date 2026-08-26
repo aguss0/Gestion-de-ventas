@@ -4,9 +4,14 @@ import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { comisionService } from "../../services/pedidoService";
 import api from "../../services/api";
+import { useOrden } from "../../hooks/useOrden";
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
-function fmtFecha(f) { if (!f) return "—"; return new Date(f).toLocaleDateString("es-AR"); }
+function fmtFecha(f) {
+  if (!f) return "—";
+  const d = new Date(f);
+  return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+}
 
 const TABS = ["General", "Miguel", "Gerardo", "Turko"];
 
@@ -17,7 +22,7 @@ export function Comisiones() {
   const [hasta, setHasta]                             = useState("");
   const [soloSeleccionados, setSoloSeleccionados]     = useState(false);
   const [seleccionados, setSeleccionados]             = useState([]);
-
+  const [soloConStock, setSoloConStock] = useState(false);
   const { data: detalle = [], isLoading } = useQuery({
     queryKey: ["comisiones", desde, hasta],
     queryFn:  () => comisionService.listar({ desde, hasta }),
@@ -34,17 +39,21 @@ export function Comisiones() {
   });
 
   // Filtrar por tab y seleccionados
-  const detalleFiltrado = useMemo(() => {
-    return detalle.filter(c => {
-      if (soloSeleccionados && seleccionados.length > 0) {
-        if (!seleccionados.includes(c.id)) return false;
-      }
-      if (tab === "Miguel"  && c.comisionMiguel  <= 0) return false;
-      if (tab === "Gerardo" && c.comisionGerardo <= 0) return false;
-      if (tab === "Turko"   && c.comisionTurko   <= 0) return false;
-      return true;
-    });
-  }, [detalle, soloSeleccionados, seleccionados, tab]);
+  // Filtrar por tab y seleccionados
+const detalleFiltrado = useMemo(() => {
+  return detalle.filter(c => {
+    if (soloConStock && !c.pedido?.detalle?.some(d => d.articulo?.manejaStock)) return false;
+    if (soloSeleccionados && seleccionados.length > 0) {
+      if (!seleccionados.includes(c.id)) return false;
+    }
+    if (tab === "Miguel"  && c.comisionMiguel  <= 0) return false;
+    if (tab === "Gerardo" && c.comisionGerardo <= 0) return false;
+    if (tab === "Turko"   && c.comisionTurko   <= 0) return false;
+    return true;
+  });
+}, [detalle, soloSeleccionados, seleccionados, tab, soloConStock]);
+
+const { datosordenados: comisionesOrdenadas, orden, toggleOrden } = useOrden(detalleFiltrado, { campo: "pedido.nroOrden", dir: "desc" });
 
   // Calcular resumen desde los datos filtrados (o seleccionados)
   const baseParaResumen = useMemo(() => {
@@ -108,12 +117,12 @@ export function Comisiones() {
   };
 
   const columnas = tab === "General"
-    ? ["Sel.", "Cobrado", "OC", "Cliente", "Vendedor", "Importe", "Com. Miguel", "Com. Gerardo", "Com. Turko", "Fecha cobro"]
-    : tab === "Miguel"
-    ? ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Miguel", "Fecha cobro"]
-    : tab === "Gerardo"
-    ? ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Gerardo", "Fecha cobro"]
-    : ["Sel.", "Cobrado", "OC", "Cliente", "Importe", "Com. Turko", "Fecha cobro"];
+  ? ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Vendedor", "Importe", "Com. Miguel", "Com. Gerardo", "Com. Turko", "Fecha cobro"]
+  : tab === "Miguel"
+  ? ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Miguel", "Fecha cobro"]
+  : tab === "Gerardo"
+  ? ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Gerardo", "Fecha cobro"]
+  : ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Turko", "Fecha cobro"];
 
   return (
     <Layout titulo="Comisiones">
@@ -137,6 +146,32 @@ export function Comisiones() {
             </div>
           </div>
         ))}
+      </div>
+    )}
+  {/* Total general */}
+    {resumen.length > 0 && (
+      <div style={{ background: "var(--primary)", borderRadius: 10, padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ color: "rgba(255,255,255,.8)", fontSize: 13, fontWeight: 500 }}>Total comisiones</div>
+        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginBottom: 2 }}>Total</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>
+              {fmt(resumen.reduce((s, v) => s + v.total, 0))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginBottom: 2 }}>✅ Cobrado</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#86efac" }}>
+              {fmt(resumen.reduce((s, v) => s + v.cobrado, 0))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginBottom: 2 }}>⏳ Pendiente</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#fca5a5" }}>
+              {fmt(resumen.reduce((s, v) => s + v.pendiente, 0))}
+            </div>
+          </div>
+        </div>
       </div>
     )}
 
@@ -168,8 +203,16 @@ export function Comisiones() {
         <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>
           {detalleFiltrado.length} comisión{detalleFiltrado.length !== 1 ? "es" : ""}
         </span>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={soloConStock}
+          onChange={e => setSoloConStock(e.target.checked)}
+        />
+        Solo pedidos con productos de stock
+      </label>
       </div>
-
+      
       {/* Indicadores */}
       <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
         <div style={{ background: "#fef9c3", border: "1px solid #d97706", borderRadius: 8, padding: "8px 14px", fontSize: 13 }}>
@@ -200,24 +243,44 @@ export function Comisiones() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
-              {columnas.map(h => (
-                <th key={h} style={{ textAlign: "left", padding: "8px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>
-                  {h === "Sel." ? (
-                    <input
-                      type="checkbox"
-                      checked={seleccionados.length === detalleFiltrado.length && detalleFiltrado.length > 0}
-                      onChange={toggleTodos}
-                      style={{ cursor: "pointer" }}
-                    />
-                  ) : h}
-                </th>
-              ))}
+              {columnas.map(h => {
+                const campoMap = {
+                  "OC":           "pedido.nroOrden",
+                  "Fecha pedido": "pedido.fecha",
+                  "Cliente":      "pedido.cliente.nombre",
+                  "Fecha cobro":  "fechaCobro",
+                };
+                const campo = campoMap[h];
+                if (campo) {
+                  const activo = orden.campo === campo;
+                  return (
+                    <th key={h}
+                      onClick={() => toggleOrden(campo)}
+                      style={{ textAlign: "left", padding: "8px 14px", fontSize: 11, color: activo ? "var(--primary)" : "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500, textTransform: "uppercase", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+                    >
+                      {h} {activo ? (orden.dir === "asc" ? "↑" : "↓") : "↕"}
+                    </th>
+                  );
+                }
+                return (
+                  <th key={h} style={{ textAlign: "left", padding: "8px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>
+                    {h === "Sel." ? (
+                      <input
+                        type="checkbox"
+                        checked={seleccionados.length === detalleFiltrado.length && detalleFiltrado.length > 0}
+                        onChange={toggleTodos}
+                        style={{ cursor: "pointer" }}
+                      />
+                    ) : h}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={columnas.length} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>Cargando…</td></tr>}
             {!isLoading && detalleFiltrado.length === 0 && <tr><td colSpan={columnas.length} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>Sin comisiones para los filtros seleccionados</td></tr>}
-            {detalleFiltrado.map(c => (
+            {comisionesOrdenadas.map(c => (
               <tr key={c.id}
                 style={{ borderBottom: "1px solid var(--border)", background: c.cobrado ? "#f0fdf4" : seleccionados.includes(c.id) ? "#eff6ff" : "#fff" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--bg)"}
@@ -235,6 +298,12 @@ export function Comisiones() {
                   />
                 </td>
                 <td style={{ padding: "9px 14px", fontWeight: 500 }}>#{c.pedido?.nroOrden}</td>
+                <td style={{ padding: "9px 14px", color: "var(--muted)", fontSize: 12 }}>
+                  {c.pedido?.fecha ? (() => { 
+                    const d = new Date(c.pedido.fecha); 
+                    return `${String(d.getUTCDate()).padStart(2,"0")}/${String(d.getUTCMonth()+1).padStart(2,"0")}/${d.getUTCFullYear()}`; 
+                  })() : "—"}
+                </td>
                 <td style={{ padding: "9px 14px" }}>{c.pedido?.cliente?.nombre}</td>
                 {tab === "General" && <td style={{ padding: "9px 14px" }}>{c.vendedor?.nombre}</td>}
                 <td style={{ padding: "9px 14px", fontWeight: 500 }}>{fmt(c.importe)}</td>

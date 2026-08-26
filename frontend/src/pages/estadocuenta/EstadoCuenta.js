@@ -4,7 +4,11 @@ import { Layout } from "../../components/Layout";
 import { estadoCuentaService } from "../../services/pedidoService";
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
-function fmtFecha(f) { if (!f) return "—"; return new Date(f).toLocaleDateString("es-AR"); }
+function fmtFecha(f) {
+  if (!f) return "—";
+  const d = new Date(f);
+  return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+}
 
 export function EstadoCuenta() {
   const [filtroEstado, setFiltroEstado] = useState("todos"); // todos | saldado | pendiente

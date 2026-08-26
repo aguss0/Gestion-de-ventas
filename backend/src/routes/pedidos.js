@@ -15,6 +15,20 @@ router.get("/", async (_req, res) => {
   res.json(data);
 });
 
+// GET /api/pedidos/con-stock — IDs de pedidos con artículos que manejan stock
+router.get("/", async (_req, res) => {
+  const data = await prisma.pedido.findMany({
+    include: {
+      cliente:  { select: { id: true, nombre: true } },
+      vendedor: { select: { id: true, nombre: true } },
+      detalle:  { include: { articulo: true } },
+      pagos:    true,
+    },
+    orderBy: { nroOrden: "desc" },
+  });
+  res.json(data);
+});
+
 // GET un pedido
 router.get("/:id", async (req, res) => {
   const pedido = await prisma.pedido.findUnique({
@@ -58,7 +72,7 @@ router.post("/", async (req, res) => {
         nroOrden,
         clienteId:  Number(clienteId),
         vendedorId: vendedorId ? Number(vendedorId) : null,
-        fecha:      fecha ? new Date(fecha) : new Date(),
+        fecha: fecha ? new Date(fecha + "T12:00:00") : new Date(),
         total,
         saldo:      total,
         observaciones,

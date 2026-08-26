@@ -16,6 +16,7 @@ router.post("/", async (req, res) => {
       manejaStock: Boolean(manejaStock),
       stock:       Number(stock || 0),
       stockMinimo: Number(stockMinimo || 0),
+      unidadMedida: unidadMedida || null,
     },
   });
   res.status(201).json(data);
@@ -31,6 +32,7 @@ router.patch("/:id", async (req, res) => {
       manejaStock: manejaStock !== undefined ? Boolean(manejaStock) : undefined,
       stock:       stock       !== undefined ? Number(stock)        : undefined,
       stockMinimo: stockMinimo !== undefined ? Number(stockMinimo)  : undefined,
+      unidadMedida: unidadMedida !== undefined ? unidadMedida : undefined,
       activo,
     },
   });

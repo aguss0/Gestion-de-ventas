@@ -7,7 +7,11 @@ import { pedidoService } from "../../services/pedidoService";
 import api from "../../services/api";
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
-function fmtFecha(f) { if (!f) return "—"; return new Date(f).toLocaleDateString("es-AR"); }
+function fmtFecha(f) {
+  if (!f) return "—";
+  const d = new Date(f);
+  return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+}
 
 export function DetallePedido() {
   const { id }      = useParams();

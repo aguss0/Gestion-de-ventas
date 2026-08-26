@@ -39,8 +39,9 @@ model Articulo {
   stock       Int      @default(0)
   stockMinimo Int      @default(0) @map("stock_minimo")
   creadoEn    DateTime @default(now()) @map("creado_en")
-
+  unidadMedida String? @map("unidad_medida")
   detallePedidos DetallePedido[]
+  compras CompraStock[]
 
   @@map("articulos")
 }
@@ -131,4 +132,20 @@ model Comision {
   vendedor Vendedor @relation(fields: [vendedorId], references: [id])
 
   @@map("comisiones")
+}
+
+model CompraStock {
+  id            Int      @id @default(autoincrement())
+  articuloId    Int      @map("articulo_id")
+  cantidad      Int
+  precioUnitario Float   @map("precio_unitario")
+  total         Float
+  proveedor     String?
+  fecha         DateTime @default(now())
+  observaciones String?
+  creadoEn      DateTime @default(now()) @map("creado_en")
+
+  articulo Articulo @relation(fields: [articuloId], references: [id])
+
+  @@map("compras_stock")
 }

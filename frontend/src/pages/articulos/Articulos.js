@@ -18,15 +18,16 @@ const svc = {
 function ModalArticulo({ articulo, onClose, onGuardado }) {
   const esEdicion = !!articulo;
   const [form, setForm] = useState({
-    codigo:      articulo?.codigo      || "",
-    nombre:      articulo?.nombre      || "",
-    descripcion: articulo?.descripcion || "",
-    unidadCaja:  articulo?.unidadCaja  || "",
-    precio:      articulo?.precio      || "",
-    manejaStock: articulo?.manejaStock || false,
-    stock:       articulo?.stock       || 0,
-    stockMinimo: articulo?.stockMinimo || 0,
-  });
+  codigo:       articulo?.codigo       || "",
+  nombre:       articulo?.nombre       || "",
+  descripcion:  articulo?.descripcion  || "",
+  unidadCaja:   articulo?.unidadCaja   || "",
+  unidadMedida: articulo?.unidadMedida || "",
+  precio:       articulo?.precio       || "",
+  manejaStock:  articulo?.manejaStock  || false,
+  stock:        articulo?.stock        || 0,
+  stockMinimo:  articulo?.stockMinimo  || 0,
+});
 
   const set    = campo => e => setForm(f => ({ ...f, [campo]: e.target.value }));
   const setChk = campo => e => setForm(f => ({ ...f, [campo]: e.target.checked }));
@@ -77,6 +78,19 @@ function ModalArticulo({ articulo, onClose, onGuardado }) {
           </div>
           <div style={row}>
             <div><label style={labelStyle}>Unidad x caja</label><input style={inputStyle} value={form.unidadCaja} onChange={set("unidadCaja")} placeholder="ej: 10 UNID" /></div>
+            <div>
+              <label style={labelStyle}>Unidad de medida</label>
+              <select style={inputStyle} value={form.unidadMedida} onChange={set("unidadMedida")}>
+                <option value="">— Sin unidad —</option>
+                <option value="unidades">Unidades</option>
+                <option value="kg">Kilogramos (kg)</option>
+                <option value="g">Gramos (g)</option>
+                <option value="litros">Litros</option>
+                <option value="ml">Mililitros (ml)</option>
+                <option value="metros">Metros</option>
+                <option value="cm">Centímetros (cm)</option>
+              </select>
+            </div>
             <div><label style={labelStyle}>Precio *</label><input style={inputStyle} type="number" value={form.precio} onChange={set("precio")} required min="0" /></div>
           </div>
 

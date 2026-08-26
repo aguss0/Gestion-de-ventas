@@ -9,6 +9,8 @@ const nav = [
   { path: "/clientes",      label: "Clientes",         icono: "👥" },
   { path: "/articulos",     label: "Artículos",        icono: "📦" },
   { path: "/vendedores",    label: "Vendedores",       icono: "🤝" },
+  { path: "/comprasstock", label: "Compras stock", icono: "📥" },
+  { path: "/rentabilidad", label: "Rentabilidad", icono: "📈" },
 ];
 
 export function Layout({ titulo, children, acciones }) {
