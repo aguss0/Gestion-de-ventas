@@ -107,37 +107,43 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // 4. Calcular y crear comisión si tiene vendedor
-    if (vendedorId) {
-    const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
-    const nombre   = vendedor?.nombre?.toLowerCase() || "";
-    const total_   = total;
+    // 4. Calcular y crear comisión SOLO si ningún artículo maneja stock
+const articulosDelPedido = await tx.articulo.findMany({
+  where: { id: { in: items.map(i => Number(i.articuloId)) } },
+  select: { id: true, manejaStock: true },
+});
 
-    let comisionMiguel  = 0;
-    let comisionGerardo = 0;
-    let comisionTurko   = 0;
+const hayStockEnPedido = articulosDelPedido.some(a => a.manejaStock);
 
-    if (nombre.includes("miguel")) {
-      comisionMiguel = total_ * 0.10;  // Miguel cobra 10% cuando es su venta
-    } else if (nombre.includes("gerardo")) {
-      comisionMiguel  = total_ * 0.06; // Miguel cobra 6% en ventas de otros
-      comisionGerardo = total_ * 0.04; // Gerardo cobra 4% en sus ventas
-    } else if (nombre.includes("turko")) {
-      comisionMiguel = total_ * 0.06;  // Miguel cobra 6% en ventas de otros
-      comisionTurko  = total_ * 0.04;  // Turko cobra 4% en sus ventas
-    }
+if (vendedorId && !hayStockEnPedido) {
+  const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
+  const nombre   = vendedor?.nombre?.toLowerCase() || "";
 
-    await tx.comision.create({
-      data: {
-        pedidoId:   p.id,
-        vendedorId: Number(vendedorId),
-        importe:    total_,
-        comisionMiguel,
-        comisionGerardo,
-        comisionTurko,
-      },
-    });
+  let comisionMiguel  = 0;
+  let comisionGerardo = 0;
+  let comisionTurko   = 0;
+
+  if (nombre.includes("miguel")) {
+    comisionMiguel = total * 0.10;
+  } else if (nombre.includes("gerardo")) {
+    comisionMiguel  = total * 0.06;
+    comisionGerardo = total * 0.04;
+  } else if (nombre.includes("turko")) {
+    comisionMiguel = total * 0.06;
+    comisionTurko  = total * 0.04;
   }
+
+  await tx.comision.create({
+    data: {
+      pedidoId:   p.id,
+      vendedorId: Number(vendedorId),
+      importe:    total,
+      comisionMiguel,
+      comisionGerardo,
+      comisionTurko,
+    },
+  });
+}
 
     return p;
   });
