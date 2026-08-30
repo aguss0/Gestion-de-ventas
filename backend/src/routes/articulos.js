@@ -7,16 +7,16 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { codigo, nombre, descripcion, unidadCaja, precio, manejaStock, stock, stockMinimo } = req.body;
+  const { codigo, nombre, descripcion, unidadCaja, unidadMedida, precio, manejaStock, stock, stockMinimo } = req.body;
   if (!nombre || !precio) return res.status(400).json({ error: "Nombre y precio requeridos" });
   const data = await prisma.articulo.create({
     data: {
       codigo, nombre, descripcion, unidadCaja,
-      precio:      Number(precio),
-      manejaStock: Boolean(manejaStock),
-      stock:       Number(stock || 0),
-      stockMinimo: Number(stockMinimo || 0),
-      unidadMedida: unidadMedida || null,
+      unidadMedida:  unidadMedida  || null,
+      precio:        Number(precio),
+      manejaStock:   Boolean(manejaStock),
+      stock:         Number(stock || 0),
+      stockMinimo:   Number(stockMinimo || 0),
     },
   });
   res.status(201).json(data);
