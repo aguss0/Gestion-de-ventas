@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { pedidoService } from "../../services/pedidoService";
 import { useOrden } from "../../hooks/useOrden";
+import { descargarRemito } from "../../utils/remitoPdf";
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
 
@@ -37,6 +38,20 @@ export function Pedidos() {
 
  const activos = pedidos.filter(p => p.activo);
   const [soloStock, setSoloStock] = useState(false);
+  const [exportandoId, setExportandoId] = useState(null);
+
+  const exportarRemito = async (pedido) => {
+    try {
+      setExportandoId(pedido.id);
+      const completo = await pedidoService.obtener(pedido.id);
+      descargarRemito(completo);
+      toast.success(`Remito #${pedido.nroOrden} descargado`);
+    } catch (_error) {
+      toast.error("No se pudo generar el remito");
+    } finally {
+      setExportandoId(null);
+    }
+  };
 
   const pedidosFiltrados = soloStock
     ? activos.filter(p => p.detalle?.some(d => d.articulo?.manejaStock))
@@ -115,6 +130,13 @@ export function Pedidos() {
                 <td style={{ padding: "10px 14px" }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button style={btnStyle("#2563eb")} onClick={() => navigate(`/pedidos/${p.id}`)}>Ver</button>
+                    <button
+                      style={btnStyle("#475569")}
+                      disabled={exportandoId === p.id}
+                      onClick={() => exportarRemito(p)}
+                    >
+                      {exportandoId === p.id ? "Generando..." : "Remito PDF"}
+                    </button>
                     <button style={btnStyle("#dc2626")} onClick={() => { if (window.confirm("¿Eliminar pedido?")) eliminar(p.id); }}>Eliminar</button>
                   </div>
                 </td>

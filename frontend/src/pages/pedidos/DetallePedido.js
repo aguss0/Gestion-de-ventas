@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { pedidoService } from "../../services/pedidoService";
 import api from "../../services/api";
+import { descargarRemito } from "../../utils/remitoPdf";
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
 function fmtFecha(f) {
@@ -52,7 +53,17 @@ export function DetallePedido() {
   if (!pedido)   return <Layout titulo="Detalle de pedido"><div style={{ padding: 32, color: "var(--muted)" }}>Pedido no encontrado</div></Layout>;
 
   return (
-    <Layout titulo={`Pedido #${pedido.nroOrden}`}>
+    <Layout
+      titulo={`Pedido #${pedido.nroOrden}`}
+      acciones={
+        <button
+          onClick={() => descargarRemito(pedido)}
+          style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
+        >
+          Descargar remito PDF
+        </button>
+      }
+    >
       <div style={{ maxWidth: 760 }}>
 
         {/* Botón volver */}
