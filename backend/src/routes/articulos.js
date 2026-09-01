@@ -23,7 +23,7 @@ router.post("/", async (req, res) => {
 });
 
 router.patch("/:id", async (req, res) => {
-  const { codigo, nombre, descripcion, unidadCaja, precio, activo, manejaStock, stock, stockMinimo } = req.body;
+  const { codigo, nombre, descripcion, unidadCaja, unidadMedida, precio, activo, manejaStock, stock, stockMinimo } = req.body;
   const data = await prisma.articulo.update({
     where: { id: Number(req.params.id) },
     data: {
@@ -37,6 +37,30 @@ router.patch("/:id", async (req, res) => {
     },
   });
   res.json(data);
+});
+
+// Eliminación definitiva: solo si el artículo no tiene movimientos asociados.
+router.delete("/:id/permanente", async (req, res) => {
+  const id = Number(req.params.id);
+  const articulo = await prisma.articulo.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { detallePedidos: true, compras: true } },
+    },
+  });
+
+  if (!articulo) return res.status(404).json({ error: "Artículo no encontrado" });
+
+  const pedidos = articulo._count.detallePedidos;
+  const compras = articulo._count.compras;
+  if (pedidos > 0 || compras > 0) {
+    return res.status(409).json({
+      error: `No se puede eliminar porque tiene ${pedidos} pedido(s) y ${compras} compra(s) asociados. Podés desactivarlo.`,
+    });
+  }
+
+  await prisma.articulo.delete({ where: { id } });
+  res.json({ mensaje: "Artículo eliminado definitivamente" });
 });
 
 router.delete("/:id", async (req, res) => {

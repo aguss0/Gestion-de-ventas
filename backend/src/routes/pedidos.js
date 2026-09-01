@@ -156,14 +156,144 @@ if (vendedorId && !hayStockEnPedido) {
   res.status(201).json(completo);
 });
 
-// PATCH editar observaciones o vendedor
+// PATCH editar pedido completo
 router.patch("/:id", async (req, res) => {
-  const { observaciones, vendedorId, activo } = req.body;
-  const data = await prisma.pedido.update({
-    where: { id: Number(req.params.id) },
-    data:  { observaciones, vendedorId: vendedorId ? Number(vendedorId) : undefined, activo },
+  const pedidoId = Number(req.params.id);
+  const { nroOrden, clienteId, vendedorId, fecha, items, observaciones, activo } = req.body;
+
+  // Mantener compatibilidad con actualizaciones parciales existentes.
+  if (!items) {
+    const data = await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        observaciones,
+        vendedorId: vendedorId === null ? null : (vendedorId ? Number(vendedorId) : undefined),
+        activo,
+      },
+    });
+    return res.json(data);
+  }
+
+  if (!clienteId || !items.length) {
+    return res.status(400).json({ error: "Cliente e items requeridos" });
+  }
+  if (!Number.isInteger(Number(nroOrden)) || Number(nroOrden) < 1) {
+    return res.status(400).json({ error: "Número de orden inválido" });
+  }
+
+  const articulosIds = items.map(i => Number(i.articuloId));
+  if (new Set(articulosIds).size !== articulosIds.length) {
+    return res.status(400).json({ error: "No puede haber artículos repetidos" });
+  }
+
+  const itemsNormalizados = items.map(i => {
+    const cantidad = Number(i.cantidad);
+    const precio = Number(i.precio);
+    const cantidadFaltante = Math.min(Math.max(Number(i.cantidadFaltante || 0), 0), cantidad);
+    if (!i.articuloId || cantidad < 1 || precio < 0) {
+      throw { status: 400, message: "Hay artículos con cantidad o precio inválido" };
+    }
+    return {
+      articuloId: Number(i.articuloId),
+      cantidad,
+      precio,
+      cantidadFaltante,
+      subtotal: precio * (cantidad - cantidadFaltante),
+      observaciones: i.observaciones || null,
+    };
   });
-  res.json(data);
+
+  const total = itemsNormalizados.reduce((s, i) => s + i.subtotal, 0);
+
+  const actualizado = await prisma.$transaction(async (tx) => {
+    const anterior = await tx.pedido.findUnique({
+      where: { id: pedidoId },
+      include: { detalle: { include: { articulo: true } } },
+    });
+    if (!anterior) throw { status: 404, message: "Pedido no encontrado" };
+
+    const nuevoNroOrden = Number(nroOrden);
+    if (nuevoNroOrden !== anterior.nroOrden) {
+      const repetido = await tx.pedido.findUnique({ where: { nroOrden: nuevoNroOrden } });
+      if (repetido) throw { status: 400, message: `Ya existe un pedido con el número ${nuevoNroOrden}` };
+    }
+
+    // Devolver primero el stock descontado por el detalle anterior.
+    for (const detalle of anterior.detalle) {
+      if (detalle.articulo.manejaStock) {
+        await tx.articulo.update({
+          where: { id: detalle.articuloId },
+          data: { stock: { increment: detalle.cantidad } },
+        });
+      }
+    }
+
+    const articulos = await tx.articulo.findMany({ where: { id: { in: articulosIds } } });
+    if (articulos.length !== articulosIds.length) {
+      throw { status: 400, message: "Uno o más artículos no existen" };
+    }
+
+    for (const item of itemsNormalizados) {
+      const articulo = articulos.find(a => a.id === item.articuloId);
+      if (articulo.manejaStock) {
+        const stockActual = await tx.articulo.findUnique({ where: { id: articulo.id } });
+        if (stockActual.stock < item.cantidad) {
+          throw { status: 400, message: `Stock insuficiente para ${articulo.nombre}. Disponible: ${stockActual.stock}` };
+        }
+        await tx.articulo.update({
+          where: { id: articulo.id },
+          data: { stock: { decrement: item.cantidad } },
+        });
+      }
+    }
+
+    await tx.detallePedido.deleteMany({ where: { pedidoId } });
+    await tx.detallePedido.createMany({
+      data: itemsNormalizados.map(i => ({
+        pedidoId,
+        ...i,
+        faltante: i.cantidadFaltante > 0,
+      })),
+    });
+
+    const pedido = await tx.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        nroOrden: nuevoNroOrden,
+        clienteId: Number(clienteId),
+        vendedorId: vendedorId ? Number(vendedorId) : null,
+        fecha: fecha ? new Date(fecha + "T12:00:00") : anterior.fecha,
+        observaciones: observaciones || null,
+        total,
+        saldo: Math.max(0, total - anterior.totalPagado),
+      },
+    });
+
+    await tx.comision.deleteMany({ where: { pedidoId } });
+    const hayStockEnPedido = articulos.some(a => a.manejaStock);
+    if (vendedorId && !hayStockEnPedido) {
+      const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
+      const nombre = vendedor?.nombre?.toLowerCase() || "";
+      let comisionMiguel = 0;
+      let comisionGerardo = 0;
+      let comisionTurko = 0;
+      if (nombre.includes("miguel")) comisionMiguel = total * 0.10;
+      else if (nombre.includes("gerardo")) { comisionMiguel = total * 0.06; comisionGerardo = total * 0.04; }
+      else if (nombre.includes("turko")) { comisionMiguel = total * 0.06; comisionTurko = total * 0.04; }
+
+      await tx.comision.create({
+        data: { pedidoId, vendedorId: Number(vendedorId), importe: total, comisionMiguel, comisionGerardo, comisionTurko },
+      });
+    }
+
+    return pedido;
+  });
+
+  const completo = await prisma.pedido.findUnique({
+    where: { id: actualizado.id },
+    include: { cliente: true, vendedor: true, detalle: { include: { articulo: true } }, pagos: true, comision: true },
+  });
+  res.json(completo);
 });
 
 // PATCH marcar faltante en un item del detalle
@@ -236,11 +366,19 @@ router.delete("/detalle/:detalleId", async (req, res) => {
 
 // DELETE lógico pedido completo
 router.delete("/:id", async (req, res) => {
-  await prisma.pedido.update({
-    where: { id: Number(req.params.id) },
-    data:  { activo: false },
+  const pedidoId = Number(req.params.id);
+
+  await prisma.$transaction(async (tx) => {
+    // La comisión deja de corresponder cuando el pedido se elimina.
+    await tx.comision.deleteMany({ where: { pedidoId } });
+
+    await tx.pedido.update({
+      where: { id: pedidoId },
+      data:  { activo: false },
+    });
   });
-  res.json({ mensaje: "Pedido eliminado" });
+
+  res.json({ mensaje: "Pedido y comisión eliminados" });
 });
 
 module.exports = router;
