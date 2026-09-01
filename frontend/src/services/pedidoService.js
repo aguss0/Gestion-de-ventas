@@ -22,4 +22,5 @@ export const estadoCuentaService = {
 export const comisionService = {
   listar:  (params = {}) => api.get("/comisiones", { params }).then(r => r.data),
   resumen: (params = {}) => api.get("/comisiones/resumen", { params }).then(r => r.data),
+  limpiarHuerfanas: () => api.delete("/comisiones/huerfanas").then(r => r.data),
 };

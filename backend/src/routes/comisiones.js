@@ -9,6 +9,7 @@ router.get("/", async (req, res) => {
   if (desde || hasta) {
     const pedidos = await prisma.pedido.findMany({
       where: {
+        activo: true,
         fecha: {
           ...(desde ? { gte: new Date(desde) } : {}),
           ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
@@ -19,7 +20,10 @@ router.get("/", async (req, res) => {
     pedidoIds = pedidos.map(p => p.id);
   }
 
-  const where = pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {};
+  const where = {
+    pedido: { is: { activo: true } },
+    ...(pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {}),
+  };
 
   const data = await prisma.comision.findMany({
     where,
@@ -44,6 +48,7 @@ router.get("/resumen", async (req, res) => {
   if (desde || hasta) {
     const pedidos = await prisma.pedido.findMany({
       where: {
+        activo: true,
         fecha: {
           ...(desde ? { gte: new Date(desde) } : {}),
           ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
@@ -54,7 +59,10 @@ router.get("/resumen", async (req, res) => {
     pedidoIds = pedidos.map(p => p.id);
   }
 
-  const where = pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {};
+  const where = {
+    pedido: { is: { activo: true } },
+    ...(pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {}),
+  };
 
   const comisiones = await prisma.comision.findMany({ where });
 
@@ -85,6 +93,19 @@ router.get("/resumen", async (req, res) => {
 
   // Solo devolver los que tienen algo
   res.json(Object.values(resumen).filter(v => v.total > 0));
+});
+
+// DELETE comisiones antiguas cuyos pedidos fueron eliminados lógicamente.
+router.delete("/huerfanas", async (_req, res) => {
+  const resultado = await prisma.comision.deleteMany({
+    where: { pedido: { is: { activo: false } } },
+  });
+  res.json({
+    eliminadas: resultado.count,
+    mensaje: resultado.count
+      ? `Se eliminaron ${resultado.count} comisión(es) sin pedido activo`
+      : "No se encontraron comisiones para limpiar",
+  });
 });
 
 // PATCH marcar cobrado/pendiente

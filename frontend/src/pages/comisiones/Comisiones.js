@@ -38,6 +38,16 @@ export function Comisiones() {
     onError: () => toast.error("Error al actualizar"),
   });
 
+  const { mutate: limpiarHuerfanas, isPending: limpiando } = useMutation({
+    mutationFn: comisionService.limpiarHuerfanas,
+    onSuccess: (data) => {
+      toast.success(data.mensaje);
+      setSeleccionados([]);
+      queryClient.invalidateQueries(["comisiones"]);
+    },
+    onError: () => toast.error("No se pudieron limpiar las comisiones antiguas"),
+  });
+
   // Filtrar por tab y seleccionados
   // Filtrar por tab y seleccionados
 const detalleFiltrado = useMemo(() => {
@@ -125,7 +135,20 @@ const { datosordenados: comisionesOrdenadas, orden, toggleOrden } = useOrden(det
   : ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Turko", "Fecha cobro"];
 
   return (
-    <Layout titulo="Comisiones">
+    <Layout
+      titulo="Comisiones"
+      acciones={
+        <button
+          onClick={() => {
+            if (window.confirm("¿Eliminar las comisiones cuyos pedidos ya fueron eliminados?")) limpiarHuerfanas();
+          }}
+          disabled={limpiando}
+          style={{ padding: "7px 14px", border: "1px solid var(--danger)", borderRadius: 6, background: "#fff", color: "var(--danger)", fontSize: 13, cursor: "pointer" }}
+        >
+          {limpiando ? "Limpiando…" : "Limpiar comisiones antiguas"}
+        </button>
+      }
+    >
 
       {/* Cards resumen — se actualizan con filtros y selección */}
       {resumen.length > 0 && (
