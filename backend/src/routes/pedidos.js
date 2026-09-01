@@ -1,6 +1,27 @@
 const router = require("express").Router();
 const prisma = require("../utils/prisma");
 
+// Libera un número ocupado por un pedido eliminado sin borrar su historial.
+// Los pedidos archivados reciben un número negativo reservado internamente.
+async function liberarNroOrdenInactivo(tx, nroOrden, pedidoActualId = null) {
+  const existente = await tx.pedido.findUnique({ where: { nroOrden } });
+  if (!existente || existente.id === pedidoActualId) return;
+
+  if (existente.activo) {
+    throw { status: 400, message: `Ya existe un pedido activo con el número ${nroOrden}` };
+  }
+
+  let nroArchivo = -(1000000 + existente.id);
+  while (await tx.pedido.findUnique({ where: { nroOrden: nroArchivo } })) {
+    nroArchivo -= 1;
+  }
+
+  await tx.pedido.update({
+    where: { id: existente.id },
+    data: { nroOrden: nroArchivo },
+  });
+}
+
 // GET todos los pedidos
 router.get("/", async (_req, res) => {
   const data = await prisma.pedido.findMany({
@@ -58,14 +79,14 @@ router.post("/", async (req, res) => {
   let nroOrden;
   if (nroOrdenBody) {
     nroOrden = Number(nroOrdenBody);
-    const existe = await prisma.pedido.findUnique({ where: { nroOrden } });
-    if (existe) return res.status(400).json({ error: `Ya existe un pedido con el número ${nroOrden}` });
   } else {
     const ultimo = await prisma.pedido.findFirst({ orderBy: { nroOrden: "desc" } });
     nroOrden = (ultimo?.nroOrden || 0) + 1;
   }
 
   const pedido = await prisma.$transaction(async (tx) => {
+    await liberarNroOrdenInactivo(tx, nroOrden);
+
     // 1. Crear pedido
     const p = await tx.pedido.create({
       data: {
@@ -214,8 +235,7 @@ router.patch("/:id", async (req, res) => {
 
     const nuevoNroOrden = Number(nroOrden);
     if (nuevoNroOrden !== anterior.nroOrden) {
-      const repetido = await tx.pedido.findUnique({ where: { nroOrden: nuevoNroOrden } });
-      if (repetido) throw { status: 400, message: `Ya existe un pedido con el número ${nuevoNroOrden}` };
+      await liberarNroOrdenInactivo(tx, nuevoNroOrden, pedidoId);
     }
 
     // Devolver primero el stock descontado por el detalle anterior.
