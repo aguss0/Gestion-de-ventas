@@ -23,6 +23,7 @@ export default function App() {
           <Route path="/"                element={<Navigate to="/pedidos" />} />
           <Route path="/pedidos"         element={<Pedidos />} />
           <Route path="/pedidos/nuevo"   element={<NuevoPedido />} />
+          <Route path="/pedidos/:id/editar" element={<NuevoPedido />} />
           <Route path="/pagos"           element={<Pagos />} />
           <Route path="/estadocuenta"    element={<EstadoCuenta />} />
           <Route path="/comisiones"      element={<Comisiones />} />

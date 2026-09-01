@@ -56,12 +56,20 @@ export function DetallePedido() {
     <Layout
       titulo={`Pedido #${pedido.nroOrden}`}
       acciones={
-        <button
-          onClick={() => descargarRemito(pedido)}
-          style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
-        >
-          Descargar remito PDF
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => navigate(`/pedidos/${pedido.id}/editar`)}
+            style={{ background: "#fff", color: "var(--primary)", border: "1px solid var(--primary)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
+          >
+            Editar pedido
+          </button>
+          <button
+            onClick={() => descargarRemito(pedido)}
+            style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
+          >
+            Descargar remito PDF
+          </button>
+        </div>
       }
     >
       <div style={{ maxWidth: 760 }}>

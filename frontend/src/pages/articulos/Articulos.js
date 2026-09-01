@@ -12,6 +12,7 @@ const svc = {
   create: (d) => api.post("/articulos", d).then(r => r.data),
   update: (id, d) => api.patch(`/articulos/${id}`, d).then(r => r.data),
   delete: (id) => api.delete(`/articulos/${id}`).then(r => r.data),
+  deletePermanente: (id) => api.delete(`/articulos/${id}/permanente`).then(r => r.data),
 };
 
 // ── Modal nuevo/editar ───────────────────────────────────────
@@ -143,6 +144,15 @@ export function Articulos() {
   const { mutate: desactivar } = useMutation({
     mutationFn: (id) => svc.delete(id),
     onSuccess:  () => { toast.success("Artículo desactivado"); queryClient.invalidateQueries(["articulos"]); },
+  });
+
+  const { mutate: eliminarDefinitivamente } = useMutation({
+    mutationFn: (id) => svc.deletePermanente(id),
+    onSuccess: () => {
+      toast.success("Artículo eliminado definitivamente");
+      queryClient.invalidateQueries(["articulos"]);
+    },
+    onError: (err) => toast.error(err.response?.data?.error || "No se pudo eliminar el artículo"),
   });
 
   const handleImportarExcel = async (e) => {
@@ -280,6 +290,14 @@ export function Articulos() {
                       {a.activo && (
                         <button onClick={() => { if (window.confirm("¿Desactivar este artículo?")) desactivar(a.id); }} style={{ padding: "4px 10px", border: "1px solid var(--danger)", borderRadius: 5, background: "#fff", fontSize: 12, cursor: "pointer", color: "var(--danger)" }}>Desactivar</button>
                       )}
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`¿Eliminar definitivamente "${a.nombre}"? Esta acción no se puede deshacer.`)) eliminarDefinitivamente(a.id);
+                        }}
+                        style={{ padding: "4px 10px", border: "1px solid #991b1b", borderRadius: 5, background: "#991b1b", fontSize: 12, cursor: "pointer", color: "#fff" }}
+                      >
+                        Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>

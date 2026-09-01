@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { pedidoService } from "../../services/pedidoService";
@@ -67,7 +67,10 @@ function BuscadorDropdown({ opciones, valor, onSeleccionar, placeholder, renderO
 
 export function NuevoPedido() {
   const navigate    = useNavigate();
+  const { id }      = useParams();
+  const esEdicion   = Boolean(id);
   const queryClient = useQueryClient();
+  const inicializado = useRef(false);
 
   const [clienteId, setClienteId]       = useState("");
   const [vendedorId, setVendedorId]     = useState("");
@@ -84,9 +87,33 @@ export function NuevoPedido() {
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
   const { data: vendedores= [] } = useQuery({ queryKey: ["vendedores"],queryFn: vendedorService.listar });
+  const { data: pedidoEditar, isLoading: cargandoPedido } = useQuery({
+    queryKey: ["pedido", id],
+    queryFn: () => pedidoService.obtener(id),
+    enabled: esEdicion,
+  });
+
+  useEffect(() => {
+    if (!pedidoEditar || inicializado.current) return;
+    inicializado.current = true;
+    setClienteId(String(pedidoEditar.clienteId));
+    setVendedorId(pedidoEditar.vendedorId ? String(pedidoEditar.vendedorId) : "");
+    setFecha(new Date(pedidoEditar.fecha).toISOString().split("T")[0]);
+    setObs(pedidoEditar.observaciones || "");
+    setNroOrden(String(pedidoEditar.nroOrden));
+    setItems((pedidoEditar.detalle || []).map(d => ({
+      articuloId: d.articuloId,
+      nombre: d.articulo?.nombre || "Artículo",
+      unidadCaja: d.articulo?.unidadCaja,
+      cantidad: Number(d.cantidad),
+      cantidadFaltante: Number(d.cantidadFaltante || 0),
+      precio: Number(d.precio),
+      subtotal: Number(d.subtotal),
+      observaciones: d.observaciones || "",
+    })));
+  }, [pedidoEditar]);
 
   const articulo = articulos.find(a => a.id === Number(articuloId));
-  const precio   = precioCustom ? Number(precioCustom) : Number(articulo?.precio || 0);
   const total    = items.reduce((s, i) => s + i.subtotal, 0);
   const precioConDescuento = precioCustom
   ? Number(precioCustom)
@@ -100,7 +127,7 @@ export function NuevoPedido() {
     if (existe >= 0) {
       const nuevos = [...items];
       nuevos[existe].cantidad += Number(cantidad);
-      nuevos[existe].subtotal  = nuevos[existe].precio * nuevos[existe].cantidad;
+      nuevos[existe].subtotal  = nuevos[existe].precio * (nuevos[existe].cantidad - (nuevos[existe].cantidadFaltante || 0));
       setItems(nuevos);
     } else {
       setItems([...items, {
@@ -108,6 +135,7 @@ export function NuevoPedido() {
         nombre:        articulo.nombre,
         unidadCaja:    articulo.unidadCaja,
         cantidad:      Number(cantidad),
+        cantidadFaltante: 0,
         precio:        precioConDescuento,
         subtotal:      precioConDescuento * Number(cantidad),
         observaciones: obsItem || null,
@@ -119,30 +147,56 @@ export function NuevoPedido() {
   const quitarItem    = (id) => setItems(items.filter(i => i.articuloId !== id));
   const editarCantidad = (id, nueva) => {
     if (nueva < 1) return;
-    setItems(items.map(i => i.articuloId === id ? { ...i, cantidad: nueva, subtotal: i.precio * nueva } : i));
+    setItems(items.map(i => {
+      if (i.articuloId !== id) return i;
+      const cantidadFaltante = Math.min(i.cantidadFaltante || 0, nueva);
+      return { ...i, cantidad: nueva, cantidadFaltante, subtotal: i.precio * (nueva - cantidadFaltante) };
+    }));
   };
 
-  const { mutate: crear, isLoading } = useMutation({
-    mutationFn: () => pedidoService.crear({
-      nroOrden:   nroOrden ? Number(nroOrden) : undefined,
-      clienteId:  Number(clienteId),
-      vendedorId: vendedorId ? Number(vendedorId) : null,
-      fecha, items, observaciones: obs || undefined,
-    }),
-    onSuccess: (data) => {
-      toast.success(`Pedido #${data.nroOrden} creado`);
-      queryClient.invalidateQueries(["pedidos"]);
-      navigate("/pedidos");
+  const editarFaltante = (id, nueva) => setItems(items.map(i => {
+    if (i.articuloId !== id) return i;
+    const cantidadFaltante = Math.min(i.cantidad, Math.max(0, Number(nueva)));
+    return { ...i, cantidadFaltante, subtotal: i.precio * (i.cantidad - cantidadFaltante) };
+  }));
+
+  const editarPrecio = (id, nuevo) => setItems(items.map(i => {
+    if (i.articuloId !== id) return i;
+    const precio = Math.max(0, Number(nuevo));
+    return { ...i, precio, subtotal: precio * (i.cantidad - (i.cantidadFaltante || 0)) };
+  }));
+
+  const editarObsItem = (id, observaciones) => setItems(items.map(i =>
+    i.articuloId === id ? { ...i, observaciones } : i
+  ));
+
+  const { mutate: guardar, isLoading } = useMutation({
+    mutationFn: () => {
+      const datos = {
+        nroOrden: nroOrden ? Number(nroOrden) : undefined,
+        clienteId: Number(clienteId),
+        vendedorId: vendedorId ? Number(vendedorId) : null,
+        fecha,
+        items,
+        observaciones: obs || undefined,
+      };
+      return esEdicion ? pedidoService.editar(id, datos) : pedidoService.crear(datos);
     },
-    onError: (err) => toast.error(err.response?.data?.error || "Error al crear"),
+    onSuccess: (data) => {
+      toast.success(`Pedido #${data.nroOrden} ${esEdicion ? "actualizado" : "creado"}`);
+      queryClient.invalidateQueries(["pedidos"]);
+      queryClient.invalidateQueries(["pedido", id]);
+      navigate(esEdicion ? `/pedidos/${id}` : "/pedidos");
+    },
+    onError: (err) => toast.error(err.response?.data?.error || "Error al guardar"),
   });
 
   const inputStyle = { width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, fontFamily: "inherit" };
   const labelStyle = { display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 };
 
   return (
-    <Layout titulo="Nuevo pedido">
-      <div style={{ maxWidth: 700 }}>
+    <Layout titulo={esEdicion ? `Editar pedido #${pedidoEditar?.nroOrden || ""}` : "Nuevo pedido"}>
+      {cargandoPedido ? <div style={{ padding: 32, color: "var(--muted)" }}>Cargando…</div> : <div style={{ maxWidth: 760 }}>
 
         {/* Datos del pedido */}
         <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 16 }}>
@@ -151,7 +205,7 @@ export function NuevoPedido() {
             <div>
               <label style={labelStyle}>Cliente *</label>
               <BuscadorDropdown
-                opciones={clientes.filter(c => c.activo)}
+                opciones={clientes.filter(c => c.activo || c.id === Number(clienteId))}
                 valor={clienteId}
                 placeholder="Buscar cliente..."
                 onSeleccionar={(c) => {
@@ -172,7 +226,7 @@ export function NuevoPedido() {
               <label style={labelStyle}>Vendedor</label>
               <select style={inputStyle} value={vendedorId} onChange={e => setVendedorId(e.target.value)}>
                 <option value="">— Sin vendedor —</option>
-                {vendedores.filter(v => v.activo).map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+                {vendedores.filter(v => v.activo || v.id === Number(vendedorId)).map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
               </select>
             </div>
             <div>
@@ -272,7 +326,7 @@ export function NuevoPedido() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>
-                  {["Artículo", "Caja", "Cantidad", "Precio unit.", "Subtotal", ""].map(h => (
+                  {["Artículo", "Caja", "Cantidad", "Faltante", "Precio unit.", "Subtotal", ""].map(h => (
                     <th key={h} style={{ textAlign: "left", padding: "6px 8px", fontSize: 11, color: "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>{h}</th>
                   ))}
                 </tr>
@@ -282,9 +336,12 @@ export function NuevoPedido() {
                   <tr key={item.articuloId} style={{ borderBottom: "1px solid var(--border)" }}>
                     <td style={{ padding: "8px" }}>
                       <div>{item.nombre}</div>
-                      {item.observaciones && (
-                        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>📝 {item.observaciones}</div>
-                      )}
+                      <input
+                        value={item.observaciones || ""}
+                        onChange={e => editarObsItem(item.articuloId, e.target.value)}
+                        placeholder="Observación opcional"
+                        style={{ ...inputStyle, padding: "4px 6px", fontSize: 11, marginTop: 4 }}
+                      />
                     </td>
                     <td style={{ padding: "8px", color: "var(--muted)", fontSize: 12 }}>{item.unidadCaja || "—"}</td>
                     <td style={{ padding: "8px" }}>
@@ -294,7 +351,12 @@ export function NuevoPedido() {
                         <button onClick={() => editarCantidad(item.articuloId, item.cantidad + 1)} style={{ width: 22, height: 22, border: "1px solid var(--border)", borderRadius: 4, background: "var(--bg)", cursor: "pointer" }}>+</button>
                       </div>
                     </td>
-                    <td style={{ padding: "8px" }}>{fmt(item.precio)}</td>
+                    <td style={{ padding: "8px" }}>
+                      <input type="number" min="0" max={item.cantidad} value={item.cantidadFaltante || 0} onChange={e => editarFaltante(item.articuloId, e.target.value)} style={{ ...inputStyle, width: 68, padding: "5px 6px" }} />
+                    </td>
+                    <td style={{ padding: "8px" }}>
+                      <input type="number" min="0" value={item.precio} onChange={e => editarPrecio(item.articuloId, e.target.value)} style={{ ...inputStyle, width: 92, padding: "5px 6px" }} />
+                    </td>
                     <td style={{ padding: "8px", fontWeight: 500 }}>{fmt(item.subtotal)}</td>
                     <td style={{ padding: "8px" }}>
                       <button onClick={() => quitarItem(item.articuloId)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: 16 }}>×</button>
@@ -311,18 +373,18 @@ export function NuevoPedido() {
 
         {/* Confirmar */}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={() => navigate("/pedidos")} style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: 6, background: "#fff", fontSize: 13, cursor: "pointer" }}>
+          <button onClick={() => navigate(esEdicion ? `/pedidos/${id}` : "/pedidos")} style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: 6, background: "#fff", fontSize: 13, cursor: "pointer" }}>
             Cancelar
           </button>
           <button
-            onClick={() => { if (!clienteId) return toast.error("Seleccioná un cliente"); if (!items.length) return toast.error("Agregá al menos un artículo"); crear(); }}
+            onClick={() => { if (!clienteId) return toast.error("Seleccioná un cliente"); if (!items.length) return toast.error("Agregá al menos un artículo"); guardar(); }}
             disabled={isLoading}
             style={{ padding: "8px 16px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, cursor: "pointer" }}
           >
-            {isLoading ? "Guardando…" : "Confirmar pedido"}
+            {isLoading ? "Guardando…" : (esEdicion ? "Guardar cambios" : "Confirmar pedido")}
           </button>
         </div>
-      </div>
+      </div>}
     </Layout>
   );
 }
