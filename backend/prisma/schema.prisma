@@ -42,8 +42,47 @@ model Articulo {
   unidadMedida String? @map("unidad_medida")
   detallePedidos DetallePedido[]
   compras CompraStock[]
+  descartableId Int? @map("descartable_id")
+  presentacion String?
+  descartable Descartable? @relation(fields: [descartableId], references: [id], onDelete: Restrict)
+  dieteticaId Int? @map("dietetica_id")
+  dietetica Dietetica? @relation(fields: [dieteticaId], references: [id], onDelete: Restrict)
+
+  @@unique([descartableId, presentacion])
+  @@unique([dieteticaId, presentacion])
 
   @@map("articulos")
+}
+
+model Descartable {
+  id Int @id @default(autoincrement())
+  codigo String @unique
+  nombre String
+  categoria String
+  costoBulto Float @map("costo_bulto")
+  unidadesBulto Int? @map("unidades_bulto")
+  unidadesManual Boolean @default(false) @map("unidades_manual")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+  articulos Articulo[]
+
+  @@map("descartables")
+}
+
+model Dietetica {
+  id Int @id @default(autoincrement())
+  codigo String @unique
+  nombre String
+  categoria String
+  costoUnidad Float? @map("costo_unidad")
+  costoMayorista Float? @map("costo_mayorista")
+  costoBulto Float? @map("costo_bulto")
+  unidadesBulto Float? @map("unidades_bulto")
+  presentacion String
+  tipoBulto String @default("unitario") @map("tipo_bulto")
+  sinStock Boolean @default(false) @map("sin_stock")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+  articulos Articulo[]
+  @@map("dietetica")
 }
 
 model Vendedor {

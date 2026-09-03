@@ -1,14 +1,29 @@
 const router = require("express").Router();
 const prisma = require("../utils/prisma");
 
+function filtroCategoria(categoria) {
+  if (!categoria || categoria === 'todas') return {};
+  const filtros = {
+    papas: { descartableId: null, dieteticaId: null, manejaStock: false },
+    descartables: { descartableId: { not: null } },
+    mf: { dieteticaId: { not: null } },
+    dietetica: { descartableId: null, dieteticaId: null, manejaStock: true },
+  };
+  if (!Object.hasOwn(filtros, categoria)) throw Object.assign(new Error('Categoría inválida'), { status: 400 });
+  return { detalle: { some: { articulo: filtros[categoria] } } };
+}
+const detalleCategorias = { select: { articulo: { select: { descartableId: true, dieteticaId: true, manejaStock: true } } } };
+const categoriasDe = p => [...new Set(p.detalle.map(d => d.articulo.dieteticaId != null ? 'mf' : d.articulo.descartableId != null ? 'descartables' : d.articulo.manejaStock ? 'dietetica' : 'papas'))];
+
 // GET estado de cuenta general
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   const pedidos = await prisma.pedido.findMany({
-    where:   { activo: true },
+    where:   { activo: true, ...filtroCategoria(req.query.categoria) },
     include: {
       cliente:  { select: { nombre: true } },
       vendedor: { select: { nombre: true } },
       pagos:    true,
+      detalle: detalleCategorias,
     },
     orderBy: { nroOrden: "asc" },
   });
@@ -18,6 +33,8 @@ router.get("/", async (_req, res) => {
     nroOrden:    p.nroOrden,
     fecha:       p.fecha,
     cliente:     p.cliente?.nombre,
+    clienteId:   p.clienteId,
+    categorias:  categoriasDe(p),
     vendedor:    p.vendedor?.nombre,
     totalVenta:  p.total,
     pagado:      p.totalPagado,
@@ -31,8 +48,8 @@ router.get("/", async (_req, res) => {
 // GET resumen por cliente
 router.get("/cliente/:clienteId", async (req, res) => {
   const pedidos = await prisma.pedido.findMany({
-    where:   { clienteId: Number(req.params.clienteId), activo: true },
-    include: { pagos: true },
+    where:   { clienteId: Number(req.params.clienteId), activo: true, ...filtroCategoria(req.query.categoria) },
+    include: { pagos: true, detalle: detalleCategorias },
     orderBy: { nroOrden: "asc" },
   });
 
@@ -40,7 +57,7 @@ router.get("/cliente/:clienteId", async (req, res) => {
     totalVentas:  pedidos.reduce((s, p) => s + p.total, 0),
     totalPagado:  pedidos.reduce((s, p) => s + p.totalPagado, 0),
     saldoPendiente: pedidos.reduce((s, p) => s + p.saldo, 0),
-    pedidos,
+    pedidos: pedidos.map(({ detalle, ...p }) => ({ ...p, categorias: categoriasDe({ detalle }) })),
   };
 
   res.json(resumen);

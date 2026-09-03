@@ -17,7 +17,8 @@ const compraService = {
   eliminar:  (id) => api.delete(`/comprasstock/${id}`).then(r => r.data),
 };
 
-export function ComprasStock() {
+export function ComprasStock({ embedded = false }) {
+  const Contenedor = embedded ? ContenidoCompras : Layout;
   const queryClient = useQueryClient();
   const [articuloId, setArticuloId]     = useState("");
   const [cantidad, setCantidad]         = useState("");
@@ -36,11 +37,11 @@ export function ComprasStock() {
     queryFn:  compraService.listar,
   });
 
-  const articulosConStock = articulos.filter(a => a.activo && a.manejaStock);
+  const articulosConStock = articulos.filter(a => a.activo && a.manejaStock && a.descartableId == null && a.dieteticaId == null);
   const articulo = articulosConStock.find(a => a.id === Number(articuloId));
   const total = cantidad && precio ? Number(cantidad) * Number(precio) : 0;
 
-  const { mutate: registrar, isLoading } = useMutation({
+  const { mutate: registrar, isPending } = useMutation({
     mutationFn: () => compraService.registrar({
       articuloId: Number(articuloId),
       cantidad:   Number(cantidad),
@@ -51,8 +52,9 @@ export function ComprasStock() {
     }),
     onSuccess: (data) => {
       toast.success(`Compra registrada — Stock nuevo: ${data.stockNuevo}`);
-      queryClient.invalidateQueries(["comprasstock"]);
-      queryClient.invalidateQueries(["articulos"]);
+      queryClient.invalidateQueries({ queryKey: ["comprasstock"] });
+      queryClient.invalidateQueries({ queryKey: ["rentabilidad"] });
+      queryClient.invalidateQueries({ queryKey: ["articulos"] });
       setArticuloId(""); setCantidad(""); setPrecio("");
       setProveedor(""); setObs("");
     },
@@ -63,8 +65,9 @@ export function ComprasStock() {
     mutationFn: (id) => compraService.eliminar(id),
     onSuccess: () => {
       toast.success("Compra eliminada y stock revertido");
-      queryClient.invalidateQueries(["comprasstock"]);
-      queryClient.invalidateQueries(["articulos"]);
+      queryClient.invalidateQueries({ queryKey: ["comprasstock"] });
+      queryClient.invalidateQueries({ queryKey: ["rentabilidad"] });
+      queryClient.invalidateQueries({ queryKey: ["articulos"] });
     },
     onError: () => toast.error("Error al eliminar"),
   });
@@ -77,7 +80,7 @@ export function ComprasStock() {
   const labelStyle = { display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 };
 
   return (
-    <Layout titulo="Compras de stock">
+    <Contenedor titulo="Compras de stock">
       <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 20 }}>
 
         {/* Formulario */}
@@ -153,10 +156,10 @@ export function ComprasStock() {
               if (!precio || Number(precio) <= 0) return toast.error("Ingresá un precio válido");
               registrar();
             }}
-            disabled={isLoading}
+            disabled={isPending}
             style={{ width: "100%", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, padding: "9px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
           >
-            {isLoading ? "Registrando…" : "✓ Registrar compra"}
+            {isPending ? "Registrando…" : "✓ Registrar compra"}
           </button>
         </div>
 
@@ -202,6 +205,7 @@ export function ComprasStock() {
           </table>
         </div>
       </div>
-    </Layout>
+    </Contenedor>
   );
 }
+function ContenidoCompras({ children }) { return <>{children}</>; }

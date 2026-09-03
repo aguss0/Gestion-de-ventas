@@ -12,6 +12,8 @@ app.use(morgan("dev"));
 // ─── Rutas API ───────────────────────────────────────────────
 app.use("/api/clientes",     require("./routes/clientes"));
 app.use("/api/articulos",    require("./routes/articulos"));
+app.use("/api/descartables", require("./routes/descartables"));
+app.use("/api/dietetica", require("./routes/dietetica"));
 app.use("/api/vendedores",   require("./routes/vendedores"));
 app.use("/api/pedidos",      require("./routes/pedidos"));
 app.use("/api/pagos",        require("./routes/pagos"));

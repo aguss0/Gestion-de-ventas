@@ -83,6 +83,7 @@ export function NuevoPedido() {
   const [obsItem, setObsItem]           = useState("");
   const [nroOrden, setNroOrden] = useState("");
   const [descuento, setDescuento] = useState(0);
+  const [catalogo, setCatalogo] = useState('papas');
 
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
@@ -101,6 +102,8 @@ export function NuevoPedido() {
     setFecha(new Date(pedidoEditar.fecha).toISOString().split("T")[0]);
     setObs(pedidoEditar.observaciones || "");
     setNroOrden(String(pedidoEditar.nroOrden));
+    const primero = pedidoEditar.detalle?.[0]?.articulo;
+    setCatalogo(primero?.dieteticaId != null ? 'mf' : primero?.descartableId != null ? 'descartables' : primero?.manejaStock ? 'dietetica' : 'papas');
     setItems((pedidoEditar.detalle || []).map(d => ({
       articuloId: d.articuloId,
       nombre: d.articulo?.nombre || "Artículo",
@@ -170,7 +173,7 @@ export function NuevoPedido() {
     i.articuloId === id ? { ...i, observaciones } : i
   ));
 
-  const { mutate: guardar, isLoading } = useMutation({
+  const { mutate: guardar, isPending: isLoading } = useMutation({
     mutationFn: () => {
       const datos = {
         nroOrden: nroOrden ? Number(nroOrden) : undefined,
@@ -184,8 +187,9 @@ export function NuevoPedido() {
     },
     onSuccess: (data) => {
       toast.success(`Pedido #${data.nroOrden} ${esEdicion ? "actualizado" : "creado"}`);
-      queryClient.invalidateQueries(["pedidos"]);
-      queryClient.invalidateQueries(["pedido", id]);
+      for (const key of ['pedidos', 'pedido', 'comisiones', 'descartables-resumen', 'dietetica-resumen', 'articulos', 'rentabilidad']) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
       navigate(esEdicion ? `/pedidos/${id}` : "/pedidos");
     },
     onError: (err) => toast.error(err.response?.data?.error || "Error al guardar"),
@@ -253,13 +257,27 @@ export function NuevoPedido() {
 
         {/* Agregar artículo */}
         <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontWeight: 500, marginBottom: 14 }}>Agregar artículo</div>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+            <span style={{ fontWeight: 500 }}>Agregar artículo</span>
+            <select aria-label="Catálogo de artículos" style={{ ...inputStyle, width: 'auto' }} value={catalogo} onChange={e => {
+              setCatalogo(e.target.value); setArticuloId(''); setCantidad(''); setPrecioCustom(''); setDescuento(0); setObsItem('');
+            }}>
+              <option value="papas">Laurens</option>
+              <option value="descartables">Descartables</option>
+              <option value="mf">MF</option>
+              <option value="dietetica">Dietética</option>
+            </select>
+          </div>
+          {catalogo !== 'papas' && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 0 }}>
+            Estos artículos no generan comisiones. Sus ventas se muestran en {catalogo === 'mf' ? 'MF' : catalogo === 'dietetica' ? 'Dietética' : 'Descartables'}. {catalogo === 'dietetica' ? 'Cargá los artículos y registrá sus compras en Dietética para disponer de stock.' : 'Para agregarlos al catálogo de venta, usá “Usar estos precios en pedidos” en esa sección.'}
+          </p>}
           <form onSubmit={agregarItem}>
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "flex-end" }}>
               <div>
                 <label style={labelStyle}>Artículo *</label>
                 <BuscadorDropdown
-                  opciones={articulos.filter(a => a.activo)}
+                  key={catalogo}
+                  opciones={articulos.filter(a => a.activo && (catalogo === 'mf' ? a.dieteticaId != null : catalogo === 'descartables' ? a.descartableId != null : a.descartableId == null && a.dieteticaId == null && Boolean(a.manejaStock) === (catalogo === 'dietetica')))}
                   valor={articuloId}
                   placeholder="Buscar artículo..."
                   onSeleccionar={(a) => { setArticuloId(String(a.id)); setPrecioCustom(""); }}

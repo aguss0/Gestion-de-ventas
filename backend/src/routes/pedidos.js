@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const prisma = require("../utils/prisma");
+const { actualizarComisionPedido } = require("../utils/comisionPedido");
 
 // Libera un número ocupado por un pedido eliminado sin borrar su historial.
 // Los pedidos archivados reciben un número negativo reservado internamente.
@@ -128,43 +129,7 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // 4. Calcular y crear comisión SOLO si ningún artículo maneja stock
-const articulosDelPedido = await tx.articulo.findMany({
-  where: { id: { in: items.map(i => Number(i.articuloId)) } },
-  select: { id: true, manejaStock: true },
-});
-
-const hayStockEnPedido = articulosDelPedido.some(a => a.manejaStock);
-
-if (vendedorId && !hayStockEnPedido) {
-  const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
-  const nombre   = vendedor?.nombre?.toLowerCase() || "";
-
-  let comisionMiguel  = 0;
-  let comisionGerardo = 0;
-  let comisionTurko   = 0;
-
-  if (nombre.includes("miguel")) {
-    comisionMiguel = total * 0.10;
-  } else if (nombre.includes("gerardo")) {
-    comisionMiguel  = total * 0.06;
-    comisionGerardo = total * 0.04;
-  } else if (nombre.includes("turko")) {
-    comisionMiguel = total * 0.06;
-    comisionTurko  = total * 0.04;
-  }
-
-  await tx.comision.create({
-    data: {
-      pedidoId:   p.id,
-      vendedorId: Number(vendedorId),
-      importe:    total,
-      comisionMiguel,
-      comisionGerardo,
-      comisionTurko,
-    },
-  });
-}
+    await actualizarComisionPedido(tx, p.id);
 
     return p;
   });
@@ -184,13 +149,17 @@ router.patch("/:id", async (req, res) => {
 
   // Mantener compatibilidad con actualizaciones parciales existentes.
   if (!items) {
-    const data = await prisma.pedido.update({
-      where: { id: pedidoId },
-      data: {
-        observaciones,
-        vendedorId: vendedorId === null ? null : (vendedorId ? Number(vendedorId) : undefined),
-        activo,
-      },
+    const data = await prisma.$transaction(async tx => {
+      const actualizado = await tx.pedido.update({
+        where: { id: pedidoId },
+        data: {
+          observaciones,
+          vendedorId: vendedorId === null ? null : (vendedorId ? Number(vendedorId) : undefined),
+          activo,
+        },
+      });
+      await actualizarComisionPedido(tx, pedidoId);
+      return actualizado;
     });
     return res.json(data);
   }
@@ -289,22 +258,7 @@ router.patch("/:id", async (req, res) => {
       },
     });
 
-    await tx.comision.deleteMany({ where: { pedidoId } });
-    const hayStockEnPedido = articulos.some(a => a.manejaStock);
-    if (vendedorId && !hayStockEnPedido) {
-      const vendedor = await tx.vendedor.findUnique({ where: { id: Number(vendedorId) } });
-      const nombre = vendedor?.nombre?.toLowerCase() || "";
-      let comisionMiguel = 0;
-      let comisionGerardo = 0;
-      let comisionTurko = 0;
-      if (nombre.includes("miguel")) comisionMiguel = total * 0.10;
-      else if (nombre.includes("gerardo")) { comisionMiguel = total * 0.06; comisionGerardo = total * 0.04; }
-      else if (nombre.includes("turko")) { comisionMiguel = total * 0.06; comisionTurko = total * 0.04; }
-
-      await tx.comision.create({
-        data: { pedidoId, vendedorId: Number(vendedorId), importe: total, comisionMiguel, comisionGerardo, comisionTurko },
-      });
-    }
+    await actualizarComisionPedido(tx, pedidoId);
 
     return pedido;
   });
@@ -354,6 +308,7 @@ router.patch("/detalle/:detalleId/faltante", async (req, res) => {
       },
     });
 
+    await actualizarComisionPedido(tx, detalle.pedidoId);
     return detalleActualizado;
   });
 
@@ -379,26 +334,40 @@ router.delete("/detalle/:detalleId", async (req, res) => {
     });
 
     await tx.detallePedido.delete({ where: { id: detalleId } });
+    await actualizarComisionPedido(tx, detalle.pedidoId);
   });
 
   res.json({ mensaje: "Artículo eliminado del pedido" });
 });
 
-// DELETE lógico pedido completo
+// DELETE físico del pedido completo y de todas sus relaciones.
 router.delete("/:id", async (req, res) => {
   const pedidoId = Number(req.params.id);
 
   await prisma.$transaction(async (tx) => {
-    // La comisión deja de corresponder cuando el pedido se elimina.
-    await tx.comision.deleteMany({ where: { pedidoId } });
-
-    await tx.pedido.update({
+    const pedido = await tx.pedido.findUnique({
       where: { id: pedidoId },
-      data:  { activo: false },
+      include: { detalle: { include: { articulo: true } } },
     });
+    if (!pedido) throw { status: 404, message: "Pedido no encontrado" };
+
+    // Reponer el stock que fue descontado al crear el pedido.
+    for (const detalle of pedido.detalle) {
+      if (detalle.articulo.manejaStock) {
+        await tx.articulo.update({
+          where: { id: detalle.articuloId },
+          data: { stock: { increment: detalle.cantidad } },
+        });
+      }
+    }
+
+    await tx.comision.deleteMany({ where: { pedidoId } });
+    await tx.pago.deleteMany({ where: { pedidoId } });
+    await tx.detallePedido.deleteMany({ where: { pedidoId } });
+    await tx.pedido.delete({ where: { id: pedidoId } });
   });
 
-  res.json({ mensaje: "Pedido y comisión eliminados" });
+  res.json({ mensaje: "Pedido eliminado definitivamente" });
 });
 
 module.exports = router;

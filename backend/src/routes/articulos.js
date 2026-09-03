@@ -11,7 +11,7 @@ router.post("/", async (req, res) => {
   if (!nombre || !precio) return res.status(400).json({ error: "Nombre y precio requeridos" });
   const data = await prisma.articulo.create({
     data: {
-      codigo, nombre, descripcion, unidadCaja,
+      codigo: codigo === undefined ? undefined : (String(codigo || "").trim() || null), nombre, descripcion, unidadCaja,
       unidadMedida:  unidadMedida  || null,
       precio:        Number(precio),
       manejaStock:   Boolean(manejaStock),
@@ -27,7 +27,7 @@ router.patch("/:id", async (req, res) => {
   const data = await prisma.articulo.update({
     where: { id: Number(req.params.id) },
     data: {
-      codigo, nombre, descripcion, unidadCaja,
+      codigo: codigo === undefined ? undefined : (String(codigo || "").trim() || null), nombre, descripcion, unidadCaja,
       precio:      precio      ? Number(precio)      : undefined,
       manejaStock: manejaStock !== undefined ? Boolean(manejaStock) : undefined,
       stock:       stock       !== undefined ? Number(stock)        : undefined,

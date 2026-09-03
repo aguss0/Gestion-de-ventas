@@ -137,7 +137,7 @@ export function Pedidos() {
                     >
                       {exportandoId === p.id ? "Generando..." : "Remito PDF"}
                     </button>
-                    <button style={btnStyle("#dc2626")} onClick={() => { if (window.confirm("¿Eliminar pedido?")) eliminar(p.id); }}>Eliminar</button>
+                    <button style={btnStyle("#dc2626")} onClick={() => { if (window.confirm("¿Eliminar definitivamente este pedido? También se borrarán sus pagos, comisión y detalle. Esta acción no se puede deshacer.")) eliminar(p.id); }}>Eliminar</button>
                   </div>
                 </td>
               </tr>

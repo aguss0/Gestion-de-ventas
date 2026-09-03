@@ -1,0 +1,22 @@
+.descartables { max-width: 1500px; }
+.descartables button,.descartables input,.descartables select { font: inherit; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; background: white; }
+.descartables button { cursor: pointer; }
+.descartables button:disabled { opacity: .5; cursor: not-allowed; }
+.descartables .primary { background: var(--primary); color: white; border-color: var(--primary); }
+.descartables .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; margin-bottom: 18px; }
+.descartables .card { padding: 18px; background: white; border: 1px solid var(--border); border-radius: 10px; }
+.descartables .card span { color: var(--muted); font-size: 13px; display: block; margin-bottom: 9px; }
+.descartables .card strong { font-size: 24px; }
+.descartables .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.descartables label { font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.descartables .hint { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.descartables .warning { background: #fffbeb; color: #92400e; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+.descartables .table-wrap { overflow-x: auto; background: white; border: 1px solid var(--border); border-radius: 8px; }
+.descartables table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.descartables th,.descartables td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.descartables th { background: #f8fafc; white-space: nowrap; }
+.descartables .money { white-space: nowrap; text-align: right; }
+.descartables .modal-backdrop { position: fixed; inset: 0; z-index: 220; background: #0007; display: flex; justify-content: center; align-items: center; padding: 20px; }
+.descartables .modal { width: 100%; max-width: 1000px; max-height: 90vh; overflow: auto; padding: 24px; border-radius: 12px; background: white; }
+.descartables .modal h2 { margin-top: 0; font-size: 20px; }
+.descartables .preview { max-height: 40vh; overflow: auto; margin-bottom: 18px; }

@@ -5,7 +5,8 @@ import api from "../../services/api";
 function fmt(n)  { return "$" + Number(n || 0).toLocaleString("es-AR"); }
 function pct(n)  { return Number(n || 0).toFixed(1) + "%"; }
 
-export function Rentabilidad() {
+export function Rentabilidad({ embedded = false }) {
+  const Contenedor = embedded ? ContenidoRentabilidad : Layout;
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["rentabilidad"],
     queryFn:  () => api.get("/comprasstock/rentabilidad").then(r => r.data),
@@ -16,7 +17,7 @@ export function Rentabilidad() {
   const totalGanancia  = items.reduce((s, i) => s + i.ganancia,       0);
 
   return (
-    <Layout titulo="Rentabilidad por producto">
+    <Contenedor titulo="Rentabilidad por producto">
 
       {/* Resumen general */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
@@ -73,6 +74,7 @@ export function Rentabilidad() {
           </tbody>
         </table>
       </div>
-    </Layout>
+    </Contenedor>
   );
 }
+function ContenidoRentabilidad({ children }) { return <>{children}</>; }

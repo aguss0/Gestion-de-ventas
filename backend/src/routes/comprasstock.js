@@ -4,6 +4,7 @@ const prisma  = require("../utils/prisma");
 // GET todas las compras
 router.get("/", async (_req, res) => {
   const data = await prisma.compraStock.findMany({
+    where: { articulo: { manejaStock: true, descartableId: null, dieteticaId: null } },
     include: { articulo: true },
     orderBy: { fecha: "desc" },
   });
@@ -13,7 +14,7 @@ router.get("/", async (_req, res) => {
 // POST registrar compra e incrementar stock
 router.post("/", async (req, res) => {
   const { articuloId, cantidad, precioUnitario, proveedor, fecha, observaciones } = req.body;
-  if (!articuloId || !cantidad || !precioUnitario) {
+  if (!Number.isInteger(Number(articuloId)) || Number(articuloId) <= 0 || !Number.isInteger(Number(cantidad)) || Number(cantidad) <= 0 || !Number.isFinite(Number(precioUnitario)) || Number(precioUnitario) <= 0) {
     return res.status(400).json({ error: "Artículo, cantidad y precio requeridos" });
   }
 
@@ -76,7 +77,7 @@ module.exports = router;
 router.get("/rentabilidad", async (_req, res) => {
   // Traer todos los artículos que manejan stock
   const articulos = await prisma.articulo.findMany({
-    where: { manejaStock: true },
+    where: { manejaStock: true, descartableId: null, dieteticaId: null },
     include: {
       compras: true,
       detallePedidos: {
@@ -92,7 +93,7 @@ router.get("/rentabilidad", async (_req, res) => {
 
     // Total vendido
     const ventasActivas = a.detallePedidos.filter(d => d.pedido?.activo !== false);
-    const unidadesVendidas = ventasActivas.reduce((s, d) => s + d.cantidad, 0);
+    const unidadesVendidas = ventasActivas.reduce((s, d) => s + d.cantidad - (d.cantidadFaltante || 0), 0);
     const totalVendido    = ventasActivas.reduce((s, d) => s + d.subtotal, 0);
 
     // Costo de lo vendido (precio promedio de compra * unidades vendidas)
@@ -105,7 +106,7 @@ router.get("/rentabilidad", async (_req, res) => {
       id:                a.id,
       nombre:            a.nombre,
       unidadMedida:      a.unidadMedida,
-      stockActual:       a.stockActual || a.stock,
+      stockActual:       a.stock,
       unidadesCompradas,
       totalInvertido,
       precioPromedioCompra,

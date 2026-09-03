@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { Clientes }      from "./pages/clientes/Clientes";
 import { Articulos }     from "./pages/articulos/Articulos";
+import { Descartables } from "./pages/descartables/Descartables";
+import { Dietetica } from "./pages/dietetica/Dietetica";
 import { Vendedores }    from "./pages/vendedores/Vendedores";
 import { Pedidos }       from "./pages/pedidos/Pedidos";
 import { NuevoPedido }   from "./pages/pedidos/NuevoPedido";
@@ -10,8 +12,8 @@ import { Pagos }         from "./pages/pagos/Pagos";
 import { EstadoCuenta }  from "./pages/estadocuenta/EstadoCuenta";
 import { Comisiones }    from "./pages/comisiones/Comisiones";
 import { DetallePedido } from "./pages/pedidos/DetallePedido";
-import { ComprasStock } from "./pages/comprasstock/ComprasStock";
-import { Rentabilidad } from "./pages/comprasstock/Rentabilidad";
+import { DieteticaStock } from "./pages/dietetica/DieteticaStock";
+
 
 const queryClient = new QueryClient();
 
@@ -29,10 +31,13 @@ export default function App() {
           <Route path="/comisiones"      element={<Comisiones />} />
           <Route path="/clientes"        element={<Clientes />} />
           <Route path="/articulos"       element={<Articulos />} />
+          <Route path="/descartables" element={<Descartables />} />
+          <Route path="/mf" element={<Dietetica />} />
+          <Route path="/dietetica" element={<DieteticaStock />} />
           <Route path="/vendedores"      element={<Vendedores />} />
           <Route path="/pedidos/:id" element={<DetallePedido />} />
-          <Route path="/comprasstock" element={<ComprasStock />} />
-          <Route path="/rentabilidad" element={<Rentabilidad />} />
+          <Route path="/comprasstock" element={<Navigate replace to="/dietetica?vista=compras" />} />
+          <Route path="/rentabilidad" element={<Navigate replace to="/dietetica?vista=rentabilidad" />} />
         </Routes>
         <Toaster position="top-right" />
       </BrowserRouter>

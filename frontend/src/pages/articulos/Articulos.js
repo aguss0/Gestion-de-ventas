@@ -16,7 +16,7 @@ const svc = {
 };
 
 // ── Modal nuevo/editar ───────────────────────────────────────
-function ModalArticulo({ articulo, onClose, onGuardado }) {
+function ModalArticulo({ articulo, onClose, onGuardado, conStock }) {
   const esEdicion = !!articulo;
   const [form, setForm] = useState({
   codigo:       articulo?.codigo       || "",
@@ -25,13 +25,13 @@ function ModalArticulo({ articulo, onClose, onGuardado }) {
   unidadCaja:   articulo?.unidadCaja   || "",
   unidadMedida: articulo?.unidadMedida || "",
   precio:       articulo?.precio       || "",
-  manejaStock:  articulo?.manejaStock  || false,
+  manejaStock:  conStock,
   stock:        articulo?.stock        || 0,
   stockMinimo:  articulo?.stockMinimo  || 0,
 });
 
   const set    = campo => e => setForm(f => ({ ...f, [campo]: e.target.value }));
-  const setChk = campo => e => setForm(f => ({ ...f, [campo]: e.target.checked }));
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,7 +101,7 @@ function ModalArticulo({ articulo, onClose, onGuardado }) {
               <input
                 type="checkbox"
                 checked={form.manejaStock}
-                onChange={setChk("manejaStock")}
+                disabled
                 style={{ width: 16, height: 16 }}
               />
               <span style={{ fontSize: 13, fontWeight: 500 }}>Manejar stock para este artículo</span>
@@ -125,7 +125,8 @@ function ModalArticulo({ articulo, onClose, onGuardado }) {
 }
 
 // ── Pantalla principal ───────────────────────────────────────
-export function Articulos() {
+export function Articulos({ conStock = false, embedded = false }) {
+  const Contenedor = embedded ? ContenidoArticulos : Layout;
   const fileExcelRef = useRef();
   const filePDFRef   = useRef();
   const queryClient  = useQueryClient();
@@ -134,7 +135,6 @@ export function Articulos() {
   const [modal, setModal]           = useState(false);
   const [editando, setEditando]     = useState(null);
   const [buscar, setBuscar]         = useState("");
-  const [soloStock, setSoloStock]   = useState(false);
 
   const { data: articulos = [], isLoading } = useQuery({
     queryKey: ["articulos"],
@@ -143,14 +143,14 @@ export function Articulos() {
 
   const { mutate: desactivar } = useMutation({
     mutationFn: (id) => svc.delete(id),
-    onSuccess:  () => { toast.success("Artículo desactivado"); queryClient.invalidateQueries(["articulos"]); },
+    onSuccess:  () => { toast.success("Artículo desactivado"); queryClient.invalidateQueries({ queryKey: ["articulos"] }); },
   });
 
   const { mutate: eliminarDefinitivamente } = useMutation({
     mutationFn: (id) => svc.deletePermanente(id),
     onSuccess: () => {
       toast.success("Artículo eliminado definitivamente");
-      queryClient.invalidateQueries(["articulos"]);
+      queryClient.invalidateQueries({ queryKey: ["articulos"] });
     },
     onError: (err) => toast.error(err.response?.data?.error || "No se pudo eliminar el artículo"),
   });
@@ -162,7 +162,7 @@ export function Articulos() {
     try {
       const res = await importarService.precios(archivo);
       if (res.error) toast.error(res.error);
-      else { toast.success(res.mensaje); setResultado(res); queryClient.invalidateQueries(["articulos"]); }
+      else { toast.success(res.mensaje); setResultado(res); queryClient.invalidateQueries({ queryKey: ["articulos"] }); }
     } catch { toast.error("Error al importar"); }
     finally { setImportando(false); fileExcelRef.current.value = ""; }
   };
@@ -174,36 +174,33 @@ export function Articulos() {
     try {
       const res = await importarPDFService.precios(archivo);
       if (res.error) toast.error(res.error);
-      else { toast.success(res.mensaje); setResultado(res); queryClient.invalidateQueries(["articulos"]); }
+      else { toast.success(res.mensaje); setResultado(res); queryClient.invalidateQueries({ queryKey: ["articulos"] }); }
     } catch { toast.error("Error al importar PDF"); }
     finally { setImportando(false); filePDFRef.current.value = ""; }
   };
 
-  const onGuardado = () => queryClient.invalidateQueries(["articulos"]);
+  const onGuardado = () => queryClient.invalidateQueries({ queryKey: ["articulos"] });
   const abrirNuevo  = () => { setEditando(null); setModal(true); };
   const abrirEditar = (a) => { setEditando(a);   setModal(true); };
   const cerrar      = () => { setModal(false);   setEditando(null); };
 
-  const articulosFiltrados = articulos.filter(a => {
+  const articulosSeccion = articulos.filter(a => a.descartableId == null && a.dieteticaId == null && Boolean(a.manejaStock) === conStock);
+  const articulosFiltrados = articulosSeccion.filter(a => {
     if (buscar && !a.nombre.toLowerCase().includes(buscar.toLowerCase()) && !a.codigo?.toLowerCase().includes(buscar.toLowerCase())) return false;
-    if (soloStock && !a.manejaStock) return false;
     return true;
   });
 
-  const stockBajoCount = articulos.filter(a => a.manejaStock && a.stock <= a.stockMinimo).length;
+  const stockBajoCount = articulosSeccion.filter(a => a.manejaStock && a.stock <= a.stockMinimo).length;
 
   const inputStyle = { padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, fontFamily: "inherit", background: "#fff" };
 
   return (
-    <Layout titulo="Artículos">
+    <Contenedor titulo={conStock ? "Dietética" : "Laurens"}>
 
       {/* Alerta stock bajo */}
       {stockBajoCount > 0 && (
         <div style={{ background: "#fef9c3", border: "1px solid var(--warn)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
           ⚠ <strong>{stockBajoCount}</strong> artículo{stockBajoCount > 1 ? "s" : ""} con stock bajo o agotado
-          <button onClick={() => setSoloStock(true)} style={{ marginLeft: 8, fontSize: 12, padding: "2px 8px", border: "1px solid var(--warn)", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#854d0e" }}>
-            Ver solo con stock
-          </button>
         </div>
       )}
 
@@ -212,16 +209,12 @@ export function Articulos() {
         <input ref={fileExcelRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleImportarExcel} />
         <input ref={filePDFRef}   type="file" accept=".pdf"       style={{ display: "none" }} onChange={handleImportarPDF} />
         <input style={{ ...inputStyle, minWidth: 200, flex: 1 }} placeholder="Buscar por nombre o código…" value={buscar} onChange={e => setBuscar(e.target.value)} />
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-          <input type="checkbox" checked={soloStock} onChange={e => setSoloStock(e.target.checked)} />
-          Solo con stock
-        </label>
-        <button onClick={() => fileExcelRef.current.click()} disabled={importando} style={{ padding: "7px 12px", border: "1px solid #16a34a", borderRadius: 6, background: "#f0fdf4", color: "#16a34a", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+        {!conStock && <><button onClick={() => fileExcelRef.current.click()} disabled={importando} style={{ padding: "7px 12px", border: "1px solid #16a34a", borderRadius: 6, background: "#f0fdf4", color: "#16a34a", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
           📥 Excel
         </button>
         <button onClick={() => filePDFRef.current.click()} disabled={importando} style={{ padding: "7px 12px", border: "1px solid var(--danger)", borderRadius: 6, background: "#fef2f2", color: "var(--danger)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
           📄 PDF
-        </button>
+        </button></>}
         <button onClick={abrirNuevo} style={{ padding: "7px 14px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
           + Nuevo artículo
         </button>
@@ -307,7 +300,8 @@ export function Articulos() {
         </table>
       </div>
 
-      {modal && <ModalArticulo articulo={editando} onClose={cerrar} onGuardado={onGuardado} />}
-    </Layout>
+      {modal && <ModalArticulo conStock={conStock} articulo={editando} onClose={cerrar} onGuardado={onGuardado} />}
+    </Contenedor>
   );
 }
+function ContenidoArticulos({ children }) { return <>{children}</>; }

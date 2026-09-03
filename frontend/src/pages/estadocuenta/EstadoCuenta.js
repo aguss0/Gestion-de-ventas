@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "../../components/Layout";
+import { SelectorCliente } from "../../components/SelectorCliente";
 import { estadoCuentaService } from "../../services/pedidoService";
 
 function fmt(n) { return "$" + Number(n || 0).toLocaleString("es-AR"); }
+const categorias = { papas: 'Laurens', descartables: 'Descartables', mf: 'MF', dietetica: 'Dietética' };
 function fmtFecha(f) {
   if (!f) return "—";
   const d = new Date(f);
@@ -14,15 +16,19 @@ export function EstadoCuenta() {
   const [filtroEstado, setFiltroEstado] = useState("todos"); // todos | saldado | pendiente
   const [desde, setDesde]               = useState("");
   const [hasta, setHasta]               = useState("");
-  const [buscar, setBuscar]             = useState("");
+  const [categoria, setCategoria] = useState('todas');
+  const [clienteId, setClienteId] = useState('');
 
-  const { data: pedidos = [], isLoading } = useQuery({
+  const { data: pedidos = [], isLoading, error } = useQuery({
     queryKey: ["estadocuenta"],
     queryFn:  estadoCuentaService.listar,
   });
+  const clientes = useMemo(() => [...new Map(pedidos.map(p => [p.clienteId, { id: p.clienteId, nombre: p.cliente }])).values()].sort((a,b) => (a.nombre || '').localeCompare(b.nombre || '')), [pedidos]);
 
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter(p => {
+      if (categoria !== 'todas' && !p.categorias?.includes(categoria)) return false;
+      if (clienteId && p.clienteId !== Number(clienteId)) return false;
       // Filtro estado
       if (filtroEstado === "saldado"   && p.saldo > 0)  return false;
       if (filtroEstado === "pendiente" && p.saldo <= 0) return false;
@@ -37,18 +43,9 @@ export function EstadoCuenta() {
         if (fechaPedido > new Date(hasta + "T23:59:59")) return false;
       }
 
-      // Filtro búsqueda por cliente o vendedor
-      if (buscar) {
-        const texto = buscar.toLowerCase();
-        if (
-          !p.cliente?.toLowerCase().includes(texto) &&
-          !p.vendedor?.toLowerCase().includes(texto)
-        ) return false;
-      }
-
       return true;
     });
-  }, [pedidos, filtroEstado, desde, hasta, buscar]);
+  }, [pedidos, filtroEstado, desde, hasta, categoria, clienteId]);
 
   const totalVentas  = pedidosFiltrados.reduce((s, p) => s + p.totalVenta, 0);
   const totalPagado  = pedidosFiltrados.reduce((s, p) => s + p.pagado, 0);
@@ -66,15 +63,11 @@ export function EstadoCuenta() {
       {/* Filtros */}
       <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
 
-        {/* Búsqueda */}
-        <input
-          style={{ ...inputStyle, minWidth: 180 }}
-          placeholder="Buscar cliente o vendedor..."
-          value={buscar}
-          onChange={e => setBuscar(e.target.value)}
-        />
-
-        {/* Estado */}
+        <SelectorCliente clientes={clientes} value={clienteId} onChange={setClienteId} style={inputStyle} />
+        <select aria-label="Categoría" style={inputStyle} value={categoria} onChange={e => setCategoria(e.target.value)}>
+          <option value="todas">Todas las categorías</option>
+          {Object.entries(categorias).map(([valor, nombre]) => <option key={valor} value={valor}>{nombre}</option>)}
+        </select>
         <select style={inputStyle} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
           <option value="todos">Todos los estados</option>
           <option value="pendiente">Con saldo pendiente</option>
@@ -94,9 +87,9 @@ export function EstadoCuenta() {
         </div>
 
         {/* Limpiar */}
-        {(filtroEstado !== "todos" || desde || hasta || buscar) && (
+        {(filtroEstado !== "todos" || desde || hasta || clienteId || categoria !== 'todas') && (
           <button
-            onClick={() => { setFiltroEstado("todos"); setDesde(""); setHasta(""); setBuscar(""); }}
+            onClick={() => { setFiltroEstado("todos"); setDesde(""); setHasta(""); setClienteId(''); setCategoria('todas'); }}
             style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius)", background: "var(--bg)", fontSize: 12, cursor: "pointer", color: "var(--muted)" }}
           >
             Limpiar filtros
@@ -109,6 +102,8 @@ export function EstadoCuenta() {
       </div>
 
       {/* Resumen */}
+      {error && <p role="alert">No se pudo cargar el estado de cuenta. {error.response?.data?.error || error.message}</p>}
+      {categoria !== 'todas' && <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>Se muestran pedidos que contienen {categorias[categoria]}. Los importes y pagos corresponden al pedido completo, incluso si es mixto. No sumes los resultados de distintas categorías: un pedido mixto puede aparecer en más de una.</p>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
           { label: "Total ventas",    value: fmt(totalVentas), color: "var(--text)"    },
@@ -145,7 +140,7 @@ export function EstadoCuenta() {
                 onMouseEnter={e => e.currentTarget.style.background = p.saldo <= 0 ? "#dcfce7" : "var(--bg)"}
                 onMouseLeave={e => e.currentTarget.style.background = p.saldo <= 0 ? "#f0fdf4" : "#fff"}
               >
-                <td style={{ padding: "10px 14px", fontWeight: 500 }}>#{p.nroOrden}</td>
+                <td style={{ padding: "10px 14px", fontWeight: 500 }}>#{p.nroOrden}<div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.categorias?.length > 1 ? 'Mixto: ' : ''}{p.categorias?.map(c => categorias[c]).join(' / ') || 'Sin artículos'}</div></td>
                 <td style={{ padding: "10px 14px", color: "var(--muted)" }}>{fmtFecha(p.fecha)}</td>
                 <td style={{ padding: "10px 14px" }}>{p.cliente}</td>
                 <td style={{ padding: "10px 14px", color: "var(--muted)" }}>{p.vendedor || "—"}</td>

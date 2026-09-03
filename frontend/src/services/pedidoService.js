@@ -16,7 +16,7 @@ export const pagoService = {
 
 export const estadoCuentaService = {
   listar:     () => api.get("/estadocuenta").then(r => r.data),
-  porCliente: (id) => api.get(`/estadocuenta/cliente/${id}`).then(r => r.data),
+  porCliente: (id, params = {}) => api.get(`/estadocuenta/cliente/${id}`, { params }).then(r => r.data),
 };
 
 export const comisionService = {

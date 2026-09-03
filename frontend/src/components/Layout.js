@@ -7,10 +7,11 @@ const nav = [
   { path: "/pagos",         label: "Pagos",            icono: "💳" },
   { path: "/comisiones",    label: "Comisiones",       icono: "📊" },
   { path: "/clientes",      label: "Clientes",         icono: "👥" },
-  { path: "/articulos",     label: "Artículos",        icono: "📦" },
+  { path: "/articulos",     label: "Laurens",        icono: "📦" },
+  { path: "/descartables", label: "Descartables", icono: "🥤" },
+  { path: "/mf", label: "MF", icono: "📋" },
+  { path: "/dietetica", label: "Dietética", icono: "🌿" },
   { path: "/vendedores",    label: "Vendedores",       icono: "🤝" },
-  { path: "/comprasstock", label: "Compras stock", icono: "📥" },
-  { path: "/rentabilidad", label: "Rentabilidad", icono: "📈" },
 ];
 
 export function Layout({ titulo, children, acciones }) {
