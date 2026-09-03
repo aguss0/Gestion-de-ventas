@@ -58,14 +58,14 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
       const r = await fetch(base + url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       return { status: r.status, data: await r.json() };
     };
-    const a = await prisma.descartable.create({ data: { codigo: 'AEA', nombre: 'BENGALA X 12 UNI', categoria: 'Cotillón', costoBulto: 16500, unidadesBulto: 12 } });
+    const a = await prisma.descartable.create({ data: { codigo: 'AEA', nombre: 'BENGALA X 12 UNI', categoria: 'AEROCOR / 100- LINEA COTILLON', costoBulto: 16500, unidadesBulto: 12 } });
     const publicar = () => json('/precios', { ids: [a.id], recargoUnidad: 30, recargoBulto: 20 });
     assert.equal((await publicar()).status, 200);
     assert.equal((await publicar()).status, 200);
     const variantes = await prisma.articulo.findMany({ where: { descartableId: a.id } });
     assert.equal(variantes.length, 2);
-    assert.equal(variantes.find(v => v.presentacion === 'unidad').precio, 1787.5);
-    assert.equal(variantes.find(v => v.presentacion === 'bulto').precio, 19800);
+    assert.equal(variantes.find(v => v.presentacion === 'unidad').precio, 2097.99);
+    assert.equal(variantes.find(v => v.presentacion === 'bulto').precio, 23239.26);
     assert.equal((await json('/precios', { ids: [a.id], recargoUnidad: -1, recargoBulto: 0 })).status, 400);
     const cliente = await prisma.cliente.create({ data: { nombre: 'Prueba' } });
     await prisma.pedido.create({ data: { nroOrden: 1, clienteId: cliente.id, detalle: { create: { articuloId: variantes.find(v => v.presentacion === 'unidad').id, cantidad: 3, cantidadFaltante: 1, precio: 1787.5, subtotal: 3575 } } } });
@@ -102,6 +102,9 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
     assert.equal((await prisma.descartable.findUnique({ where: { id: a.id } })).unidadesBulto, 17);
     assert.equal((await json('/completar-unidades', {})).data.completados, 0);
     const vendedor = await prisma.vendedor.create({ data: { nombre: 'Miguel' } });
+    const precioAntes = (await prisma.articulo.findUnique({ where: { id: variantes[0].id } })).precio;
+    assert.equal((await json('/precios', { ids: [a.id, ambiguo.id], recargoUnidad: 50, recargoBulto: 50 })).status, 400);
+    assert.equal((await prisma.articulo.findUnique({ where: { id: variantes[0].id } })).precio, precioAntes);
     const papa = await prisma.articulo.findFirst({ where: { nombre: 'Artículo previo' } });
     const pedidoApi = async (suffix, body, method = 'POST') => {
       const r = await fetch(base.replace('/descartables', '/pedidos') + suffix, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });

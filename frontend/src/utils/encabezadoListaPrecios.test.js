@@ -7,7 +7,7 @@ import { crearListaDietetica } from './listaDieteticaPdf';
 test.each(['Descartables', 'MF'])('contacto y título en todas las páginas de %s', tipo => {
   const articulos = Array.from({ length: 70 }, (_, i) => ({
     codigo: `A${String(i + 1).padStart(3, '0')}`, nombre: tipo === 'MF' ? `Almendras naturales - presentación ${i + 1}` : `Vasos descartables - presentación ${i + 1}`,
-    categoria: 'Ejemplo', costoBulto: 12000, costoUnidad: 1100, unidadesBulto: 12, presentacion: '12 UNID',
+    categoria: '100- Ejemplo', costoBulto: 12000, costoUnidad: 1100, unidadesBulto: 12, presentacion: '12 UNID',
   }));
   const doc = tipo === 'MF' ? crearListaDietetica(articulos, 20, 10) : crearListaDescartables(articulos, 20, 10);
   const pdf = doc.output();

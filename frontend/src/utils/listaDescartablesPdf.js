@@ -1,14 +1,9 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { preciosVentaDescartable } from './costosDescartables';
 import { dibujarEncabezadoLista } from './encabezadoListaPrecios';
 
-export function preciosDescartable(a, unidad, bulto) {
-  const ru = Number(unidad), rb = Number(bulto);
-  if ([ru, rb].some(n => !Number.isFinite(n) || n < 0 || n > 10000)) throw new Error('Ingresá recargos válidos entre 0 y 10000%');
-  if (!a.unidadesBulto || !Number.isFinite(a.costoBulto)) throw new Error(`Revisá las unidades por bulto de ${a.codigo}`);
-  return { unidad: Math.round(a.costoBulto / a.unidadesBulto * (1 + ru / 100) * 100) / 100,
-    bulto: Math.round(a.costoBulto * (1 + rb / 100) * 100) / 100 };
-}
+export const preciosDescartable = preciosVentaDescartable;
 
 export function crearListaDescartables(articulos, recargoUnidad, recargoBulto) {
   if (!articulos.length) throw new Error('Seleccioná al menos un artículo');

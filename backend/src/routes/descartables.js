@@ -2,6 +2,7 @@ const router = require('express').Router();
 const multer = require('multer');
 const prisma = require('../utils/prisma');
 const { leerLista, unidadesDe } = require('../utils/descartablesPdf');
+const { preciosVentaDescartable } = require('../utils/costosDescartables');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const fallo = (message) => Object.assign(new Error(message), { status: 400 });
 
@@ -82,9 +83,10 @@ router.post('/precios', async (req, res) => {
     const productos = await tx.descartable.findMany({ where: { id: { in: [...new Set(ids)] } } });
     if (productos.length !== new Set(ids).size) throw fallo('Hay artículos que ya no existen');
     for (const a of productos) {
-      if (!a.unidadesBulto) throw fallo(`Revisá las unidades por bulto de ${a.codigo}`);
+      let precios;
+      try { precios = preciosVentaDescartable(a, ru, rb); } catch (e) { throw fallo(e.message); }
       for (const presentacion of ['unidad', 'bulto']) {
-        const precio = Math.round((presentacion === 'unidad' ? a.costoBulto / a.unidadesBulto * (1 + ru / 100) : a.costoBulto * (1 + rb / 100)) * 100) / 100;
+        const precio = precios[presentacion];
         const data = { nombre: `${a.codigo} - ${a.nombre} (${presentacion})`, precio, unidadCaja: presentacion === 'bulto' ? `${a.unidadesBulto} unidades` : '1 unidad', unidadMedida: presentacion };
         await tx.articulo.upsert({ where: { descartableId_presentacion: { descartableId: a.id, presentacion } },
           create: { ...data, descartableId: a.id, presentacion }, update: data });
