@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { Layout } from '../../components/Layout';
 import { crearListaDescartables, preciosDescartable } from '../../utils/listaDescartablesPdf';
 import './Descartables.css';
+import { costosFinalesDescartable } from '../../utils/costosDescartables';
 
 const dinero = n => Number(n).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
 const errorTexto = e => e.response?.data?.error || e.message || 'No se pudo completar la operación';
@@ -75,10 +76,14 @@ export function Descartables() {
     {!!articulos.filter(a => !a.unidadesBulto).length && <div className="warning">{articulos.filter(a => !a.unidadesBulto).length} artículos requieren revisar las unidades por bulto antes de calcular su precio unitario.</div>}
     <div className="toolbar"><input aria-label="Buscar descartables" placeholder="Buscar código o artículo…" value={buscar} onChange={e => { setBuscar(e.target.value); setPagina(0); }} /><select aria-label="Categoría" value={categoria} onChange={e => { setCategoria(e.target.value); setPagina(0); }}><option value="">Todas las categorías</option>{[...new Set(articulos.map(a => a.categoria))].map(c => <option key={c}>{c}</option>)}</select><label><input type="checkbox" checked={revisar} onChange={e => { setRevisar(e.target.checked); setPagina(0); }} />Solo a revisar</label><span>{filtrados.length} artículos</span></div>
     {error && <p role="alert">{errorTexto(error)}</p>}
-    <div className="table-wrap"><table><thead><tr><th><input aria-label="Seleccionar todos los filtrados" type="checkbox" checked={filtrados.length > 0 && filtrados.every(a => seleccion.includes(a.id))} onChange={e => setSeleccion(s => e.target.checked ? [...new Set([...s, ...filtrados.map(a => a.id)])] : s.filter(id => !filtrados.some(a => a.id === id)))} /></th><th>Código</th><th>Artículo / categoría</th><th>Unidades por bulto</th><th>Costo por unidad</th><th>Costo por bulto</th></tr></thead><tbody>
-      {isLoading && <tr><td colSpan="6">Cargando…</td></tr>}
-      {!isLoading && !filtrados.length && <tr><td colSpan="6">No hay artículos. Importá la lista del proveedor o cambiá los filtros.</td></tr>}
-      {filtrados.slice(paginaActual * 50, (paginaActual + 1) * 50).map(a => <tr key={a.id}><td><input aria-label={`Seleccionar ${a.codigo}`} type="checkbox" checked={seleccion.includes(a.id)} onChange={() => toggle(a.id)} /></td><td>{a.codigo}</td><td>{a.nombre}<div className="hint">{a.categoria}</div></td><td><Unidades key={`${a.id}-${a.unidadesBulto}`} articulo={a} onGuardar={guardarUnidades.mutate} pendiente={guardarUnidades.isPending} /></td><td className="money">{a.unidadesBulto ? dinero(a.costoBulto / a.unidadesBulto) : 'A revisar'}</td><td className="money">{dinero(a.costoBulto)}</td></tr>)}
+    <p className="hint">Costos finales: categoría 100 = +21%; 50 = +10,5%; 0 = sin recargo. Luego se descuenta el 3% en todos los casos. Estos valores no modifican los costos originales ni los precios de venta del PDF o de pedidos.</p>
+    <div className="table-wrap"><table><thead><tr><th><input aria-label="Seleccionar todos los filtrados" type="checkbox" checked={filtrados.length > 0 && filtrados.every(a => seleccion.includes(a.id))} onChange={e => setSeleccion(s => e.target.checked ? [...new Set([...s, ...filtrados.map(a => a.id)])] : s.filter(id => !filtrados.some(a => a.id === id)))} /></th><th>Código</th><th>Artículo / categoría</th><th>Unidades por bulto</th><th>Costo por unidad</th><th>Costo por bulto</th><th>Precio Venta unidad</th><th>Precio venta bulto</th></tr></thead><tbody>
+      {isLoading && <tr><td colSpan="8">Cargando…</td></tr>}
+      {!isLoading && !filtrados.length && <tr><td colSpan="8">No hay artículos. Importá la lista del proveedor o cambiá los filtros.</td></tr>}
+      {filtrados.slice(paginaActual * 50, (paginaActual + 1) * 50).map(a => {
+        const finales = costosFinalesDescartable(a);
+        return <tr key={a.id}><td><input aria-label={`Seleccionar ${a.codigo}`} type="checkbox" checked={seleccion.includes(a.id)} onChange={() => toggle(a.id)} /></td><td>{a.codigo}</td><td>{a.nombre}<div className="hint">{a.categoria}</div></td><td><Unidades key={`${a.id}-${a.unidadesBulto}`} articulo={a} onGuardar={guardarUnidades.mutate} pendiente={guardarUnidades.isPending} /></td><td className="money">{a.unidadesBulto ? dinero(a.costoBulto / a.unidadesBulto) : 'A revisar'}</td><td className="money">{dinero(a.costoBulto)}</td><td className="money">{finales.unidad == null ? finales.motivo : dinero(finales.unidad)}</td><td className="money">{finales.bulto == null ? finales.motivo : dinero(finales.bulto)}</td></tr>;
+      })}
     </tbody></table></div>
     <div className="toolbar" style={{ marginTop: 12 }}><button disabled={!paginaActual} onClick={() => setPagina(paginaActual - 1)}>Anterior</button><span>Página {paginaActual + 1} de {paginas}</span><button disabled={paginaActual + 1 >= paginas} onClick={() => setPagina(paginaActual + 1)}>Siguiente</button></div>
 
