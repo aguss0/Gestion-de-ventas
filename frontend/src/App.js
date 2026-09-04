@@ -13,6 +13,7 @@ import { EstadoCuenta }  from "./pages/estadocuenta/EstadoCuenta";
 import { Comisiones }    from "./pages/comisiones/Comisiones";
 import { DetallePedido } from "./pages/pedidos/DetallePedido";
 import { DieteticaStock } from "./pages/dietetica/DieteticaStock";
+import { HistorialListas } from "./pages/historiallistas/HistorialListas";
 
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/descartables" element={<Descartables />} />
           <Route path="/mf" element={<Dietetica />} />
           <Route path="/dietetica" element={<DieteticaStock />} />
+          <Route path="/historial-listas" element={<HistorialListas />} />
           <Route path="/vendedores"      element={<Vendedores />} />
           <Route path="/pedidos/:id" element={<DetallePedido />} />
           <Route path="/comprasstock" element={<Navigate replace to="/dietetica?vista=compras" />} />

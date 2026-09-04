@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { Layout } from '../../components/Layout';
-import { crearListaDescartables, preciosDescartable } from '../../utils/listaDescartablesPdf';
+import { preciosDescartable, snapshotDescartables } from '../../utils/listaDescartablesPdf';
+import { crearListaDesdeHistorial } from '../../utils/listaHistorialPdf';
 import './Descartables.css';
 import { costosFinalesDescartable } from '../../utils/costosDescartables';
 
@@ -26,6 +27,7 @@ export function Descartables() {
   const [archivo, setArchivo] = useState(null), [modal, setModal] = useState(false);
   const [ru, setRu] = useState('0'), [rb, setRb] = useState('0');
   const [desde, setDesde] = useState(''), [hasta, setHasta] = useState('');
+  const [guardandoLista, setGuardandoLista] = useState(false);
   const { data: articulos = [], isLoading, error } = useQuery({ queryKey: ['descartables'], queryFn: () => api.get('/descartables').then(r => r.data) });
   const { data: resumen, error: errorResumen } = useQuery({ queryKey: ['descartables-resumen', desde, hasta], queryFn: () => api.get('/descartables/resumen', { params: { desde, hasta } }).then(r => r.data) });
   const importar = useMutation({
@@ -54,8 +56,21 @@ export function Descartables() {
   const puedeExportar = elegidos.length > 0 && elegidos.every(a => costosFinalesDescartable(a).unidad != null) && porcentajesValidos;
   const paginas = Math.max(1, Math.ceil(filtrados.length / 50)), paginaActual = Math.min(pagina, paginas - 1);
   const toggle = id => setSeleccion(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const descargar = () => {
-    try { crearListaDescartables(elegidos, ru, rb).save('lista-precios-descartables.pdf'); } catch (e) { toast.error(errorTexto(e)); }
+  const descargar = async () => {
+    try {
+      const items = snapshotDescartables(elegidos, ru, rb);
+      crearListaDesdeHistorial({ tipo: 'descartables', creadoEn: new Date().toISOString(), items }).save('lista-precios-descartables.pdf');
+      toast.success('Lista descargada');
+    } catch (e) { toast.error(errorTexto(e)); }
+  };
+  const guardarLista = async () => {
+    setGuardandoLista(true);
+    try {
+      const items = snapshotDescartables(elegidos, ru, rb);
+      await api.post('/historial-listas', { tipo: 'descartables', recargoUnidad: Number(ru), recargoBulto: Number(rb), items });
+      qc.invalidateQueries({ queryKey: ['historial-listas'] });
+      toast.success('Lista guardada en el historial');
+    } catch (e) { toast.error(errorTexto(e)); } finally { setGuardandoLista(false); }
   };
 
   return <Layout titulo="Descartables"><div className="descartables">
@@ -92,6 +107,6 @@ export function Descartables() {
     {modal && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Lista reducida"><h2>Lista reducida · {elegidos.length} artículos</h2><div className="toolbar"><label>Recargo por unidad (%) <input type="number" min="0" max="10000" value={ru} onChange={e => setRu(e.target.value)} /></label><label>Recargo por bulto (%) <input type="number" min="0" max="10000" value={rb} onChange={e => setRb(e.target.value)} /></label></div><p className="hint">Los dos porcentajes se aplican a toda la selección. Se aplican sobre el costo final con IVA y el 3% de descuento. El PDF muestra únicamente precios finales de venta, sin costos ni recargos.</p>{!puedeExportar && <p className="warning">Revisá las categorías, los costos, las cantidades por bulto de los seleccionados y los porcentajes antes de continuar.</p>}<div className="preview"><table><thead><tr><th>Código</th><th>Artículo</th><th>Venta unidad</th><th>Venta bulto</th></tr></thead><tbody>{elegidos.map(a => {
       const p = porcentajesValidos && costosFinalesDescartable(a).unidad != null ? preciosDescartable(a, ru, rb) : null;
       return <tr key={a.id}><td>{a.codigo}</td><td>{a.nombre}</td><td className="money">{p ? dinero(p.unidad) : 'A revisar'}</td><td className="money">{p ? dinero(p.bulto) : 'A revisar'}</td></tr>;
-    })}</tbody></table></div><div className="toolbar"><button disabled={publicar.isPending} onClick={() => setModal(false)}>Cerrar</button><button className="primary" disabled={!puedeExportar} onClick={descargar}>Descargar PDF</button><button disabled={!puedeExportar || publicar.isPending} onClick={() => { if (window.confirm('¿Habilitar estos artículos por unidad y por bulto en Pedidos con estos precios? No se modifican pedidos anteriores.')) publicar.mutate(); }}>{publicar.isPending ? 'Guardando…' : 'Usar estos precios en pedidos'}</button></div></section></div>}
+    })}</tbody></table></div><div className="toolbar"><button disabled={publicar.isPending || guardandoLista} onClick={() => setModal(false)}>Cerrar</button><button className="primary" disabled={!puedeExportar} onClick={descargar}>Descargar PDF</button><button disabled={!puedeExportar || guardandoLista} onClick={guardarLista}>{guardandoLista ? 'Guardando…' : 'Guardar en historial'}</button><button disabled={!puedeExportar || publicar.isPending || guardandoLista} onClick={() => { if (window.confirm('¿Habilitar estos artículos por unidad y por bulto en Pedidos con estos precios? No se modifican pedidos anteriores.')) publicar.mutate(); }}>{publicar.isPending ? 'Guardando…' : 'Usar estos precios en pedidos'}</button></div></section></div>}
   </div></Layout>;
 }

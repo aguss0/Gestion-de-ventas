@@ -3,6 +3,7 @@ import { Descartables } from './Descartables';
 jest.mock('../../components/Layout', () => ({ Layout: ({ children }) => <div>{children}</div> }));
 jest.mock('../../services/api', () => ({}));
 jest.mock('../../utils/listaDescartablesPdf', () => ({ crearListaDescartables: jest.fn(), preciosDescartable: jest.fn() }));
+jest.mock('../../utils/listaHistorialPdf', () => ({ crearListaDesdeHistorial: jest.fn() }));
 jest.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey }) => ({ data: queryKey[0] === 'descartables' ? [
     { id: 1, codigo: 'AEA', nombre: 'Bengala', categoria: 'AEROCOR / 100- LINEA', costoBulto: 16500, unidadesBulto: 12 },

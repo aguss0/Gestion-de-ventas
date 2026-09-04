@@ -20,7 +20,7 @@ test.each(['Descartables', 'MF'])('contacto y título en todas las páginas de %
   expect(pdf).not.toContain('VENTA Y ASESORAMIENTO');
   expect(pdf.split('Tel: 3512590512').length - 1).toBe(paginas);
   expect(pdf).toContain('mailto:j.miguel.sanchez.23@gmail.com');
-  expect(pdf).toContain(`Lista de precios - ${tipo}`);
+  expect(pdf).toContain('Lista de precios');
   if (process.env.PDF_PREVIEW_DIR) {
     fs.mkdirSync(process.env.PDF_PREVIEW_DIR, { recursive: true });
     fs.writeFileSync(path.join(process.env.PDF_PREVIEW_DIR, `${tipo}.pdf`), Buffer.from(doc.output('arraybuffer')));

@@ -5,8 +5,8 @@ export const contactoListaPrecios = {
   email: 'j.miguel.sanchez.23@gmail.com',
 };
 
-export function dibujarEncabezadoLista(doc, fecha) {
-  const { vendedor, telefono, email } = contactoListaPrecios;
+export function dibujarEncabezadoLista(doc, fecha, contacto = contactoListaPrecios) {
+  const { vendedor, telefono, email } = contacto;
   doc.setFillColor(25, 38, 54);
   doc.roundedRect(14, 12, 182, 50, 3, 3, 'F');
   doc.setFillColor(221, 175, 85);

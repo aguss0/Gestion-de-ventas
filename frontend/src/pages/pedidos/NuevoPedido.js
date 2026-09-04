@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { pedidoService } from "../../services/pedidoService";
@@ -67,6 +67,7 @@ function BuscadorDropdown({ opciones, valor, onSeleccionar, placeholder, renderO
 
 export function NuevoPedido() {
   const navigate    = useNavigate();
+  const location    = useLocation();
   const { id }      = useParams();
   const esEdicion   = Boolean(id);
   const queryClient = useQueryClient();
@@ -83,7 +84,7 @@ export function NuevoPedido() {
   const [obsItem, setObsItem]           = useState("");
   const [nroOrden, setNroOrden] = useState("");
   const [descuento, setDescuento] = useState(0);
-  const [catalogo, setCatalogo] = useState('papas');
+  const [catalogo, setCatalogo] = useState(location.state?.catalogo || 'papas');
 
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
