@@ -188,3 +188,20 @@ model CompraStock {
 
   @@map("compras_stock")
 }
+
+model HistorialListaPrecio {
+  id             Int      @id @default(autoincrement())
+  tipo           String
+  recargoUnidad  Float    @map("recargo_unidad")
+  recargoBulto   Float    @map("recargo_bulto")
+  cantidad       Int
+  contenido      String
+  vendedor       String   @default("Miguel Sanchez")
+  telefono       String   @default("3512590512")
+  email          String   @default("j.miguel.sanchez.23@gmail.com")
+  creadoEn       DateTime @default(now()) @map("creado_en")
+
+  @@index([tipo, creadoEn])
+
+  @@map("historial_listas_precios")
+}
