@@ -3,9 +3,15 @@ import { HistorialListas } from './HistorialListas';
 const mockNavigate = jest.fn();
 jest.mock('../../components/Layout', () => ({ Layout: ({ children }) => <div>{children}</div> }));
 jest.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
-jest.mock('../../services/api', () => ({ get: jest.fn(() => Promise.resolve({ data: { id: 7, tipo: 'descartables', creadoEn: '2026-09-03T12:00:00.000Z', cantidad: 1, recargoUnidad: 30, recargoBulto: 20, items: [{ codigo: 'AEA', nombre: 'Bengala', unidadesBulto: 12, precioUnidad: 2097.99, precioBulto: 23239.26 }] } })), post: jest.fn(() => Promise.resolve({ data: { actualizados: 2 } })) }));
+jest.mock('react-hot-toast', () => ({ success: jest.fn(), error: jest.fn() }));
+jest.mock('../../services/api', () => ({ get: jest.fn(() => Promise.resolve({ data: { id: 7, tipo: 'descartables', creadoEn: '2026-09-03T12:00:00.000Z', cantidad: 1, recargoUnidad: 30, recargoBulto: 20, items: [{ codigo: 'AEA', nombre: 'Bengala', unidadesBulto: 12, precioUnidad: 2097.99, precioBulto: 23239.26 }] } })), post: jest.fn(() => Promise.resolve({ data: { actualizados: 2, catalogo: 'descartables' } })) }));
 jest.mock('../../utils/listaHistorialPdf', () => ({ crearListaDesdeHistorial: jest.fn() }));
-jest.mock('@tanstack/react-query', () => ({ useQuery: () => ({ data: [{ id: 7, tipo: 'descartables', creadoEn: '2026-09-03T12:00:00.000Z', cantidad: 1, recargoUnidad: 30, recargoBulto: 20, items: [{ codigo: 'AEA', nombre: 'Bengala', unidadesBulto: 12, precioUnidad: 2097.99, precioBulto: 23239.26 }] }] }) }));
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: ({ queryKey }) => queryKey[0] === 'datos-generador-listas'
+    ? ({ data: { articulos: [], descartables: [], mf: [] } })
+    : ({ data: [{ id: 7, tipo: 'descartables', creadoEn: '2026-09-03T12:00:00.000Z', cantidad: 1, recargoUnidad: 30, recargoBulto: 20, items: [{ codigo: 'AEA', nombre: 'Bengala', unidadesBulto: 12, precioUnidad: 2097.99, precioBulto: 23239.26 }] }] }),
+  useQueryClient: () => ({ invalidateQueries: jest.fn() }),
+}));
 
 test('consulta la fotografía de una lista guardada', async () => {
   render(<HistorialListas />);

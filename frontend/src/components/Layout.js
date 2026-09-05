@@ -11,7 +11,7 @@ const nav = [
   { path: "/descartables", label: "Descartables", icono: "🥤" },
   { path: "/mf", label: "MF", icono: "📋" },
   { path: "/dietetica", label: "Dietética", icono: "🌿" },
-  { path: "/historial-listas", label: "Historial listas", icono: "🗂️" },
+  { path: "/historial-listas", label: "Listas de precios", icono: "🗂️" },
   { path: "/vendedores",    label: "Vendedores",       icono: "🤝" },
 ];
 

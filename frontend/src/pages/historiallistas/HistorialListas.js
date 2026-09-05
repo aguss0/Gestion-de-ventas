@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { Layout } from '../../components/Layout';
 import { crearListaDesdeHistorial } from '../../utils/listaHistorialPdf';
+import { GeneradorListas } from './GeneradorListas';
 import '../descartables/Descartables.css';
 
 const fecha = valor => new Date(valor).toLocaleString('es-AR');
@@ -33,20 +34,24 @@ export function HistorialListas() {
   const usarEnPedido = async lista => {
     setUsando(lista.id);
     try {
-      await api.post(`/historial-listas/${lista.id}/precios`);
+      const respuesta = await api.post(`/historial-listas/${lista.id}/precios`);
       toast.success('Precios cargados. Ya podés armar el pedido.');
-      navigate('/pedidos/nuevo', { state: { catalogo: lista.tipo === 'mf' ? 'mf' : 'descartables' } });
+      const predeterminado = lista.tipo === 'mf' ? 'mf' : 'descartables';
+      navigate('/pedidos/nuevo', { state: { catalogo: respuesta?.data?.catalogo || predeterminado } });
     } catch (e) { toast.error(e.response?.data?.error || 'No se pudieron cargar los precios en el pedido'); }
     finally { setUsando(null); }
   };
-  return <Layout titulo="Historial de listas"><div className="descartables">
-    <div className="toolbar"><select aria-label="Tipo de lista" value={tipo} onChange={e => setTipo(e.target.value)}><option value="todos">Todas</option><option value="descartables">Descartables</option><option value="mf">MF</option></select><span>{listas.length} listas guardadas</span></div>
+  return <Layout titulo="Listas de precios"><div className="descartables">
+    <GeneradorListas />
+    <hr className="separador-listas" />
+    <h2>Historial de listas guardadas</h2>
+    <div className="toolbar"><select aria-label="Tipo de lista" value={tipo} onChange={e => setTipo(e.target.value)}><option value="todos">Todas</option><option value="general">Combinadas</option><option value="descartables">Descartables</option><option value="mf">MF</option></select><span>{listas.length} listas guardadas</span></div>
     {error && <p role="alert">No se pudo cargar el historial</p>}
     <div className="table-wrap"><table><thead><tr><th>N.º</th><th>Fecha</th><th>Tipo</th><th>Artículos</th><th>Recargo unidad</th><th>Recargo bulto</th><th>Acciones</th></tr></thead><tbody>
       {isLoading && <tr><td colSpan="7">Cargando…</td></tr>}
       {!isLoading && !listas.length && <tr><td colSpan="7">Todavía no hay listas guardadas.</td></tr>}
-      {listas.map(lista => <tr key={lista.id}><td>#{lista.id}</td><td>{fecha(lista.creadoEn)}</td><td>{lista.tipo === 'mf' ? 'MF' : 'Descartables'}</td><td>{lista.cantidad}</td><td>{lista.recargoUnidad}%</td><td>{lista.recargoBulto}%</td><td><button className="primary" disabled={abriendo === lista.id} onClick={() => ver(lista.id)}>{abriendo === lista.id ? 'Abriendo…' : 'Ver y descargar'}</button></td></tr>)}
+      {listas.map(lista => <tr key={lista.id}><td>#{lista.id}</td><td>{fecha(lista.creadoEn)}</td><td>{lista.tipo === 'general' ? 'Combinada' : lista.tipo === 'mf' ? 'MF' : 'Descartables'}</td><td>{lista.cantidad}</td><td>{lista.tipo === 'general' ? 'Según grupo' : `${lista.recargoUnidad}%`}</td><td>{lista.tipo === 'general' ? 'Según grupo' : `${lista.recargoBulto}%`}</td><td><button className="primary" disabled={abriendo === lista.id} onClick={() => ver(lista.id)}>{abriendo === lista.id ? 'Abriendo…' : 'Ver y descargar'}</button></td></tr>)}
     </tbody></table></div>
-    {detalle && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Detalle de lista"><h2>Lista #{detalle.id} · {detalle.tipo === 'mf' ? 'MF' : 'Descartables'}</h2><p>{fecha(detalle.creadoEn)} · {detalle.cantidad} artículos</p><div className="preview"><table><thead><tr><th>Código</th><th>Artículo</th><th>Presentación</th><th>Precio unidad</th><th>Precio bulto</th></tr></thead><tbody>{detalle.items.map((a, i) => <tr key={`${a.codigo}-${i}`}><td>{a.codigo || '—'}</td><td>{a.nombre}</td><td>{a.presentacion || (a.unidadesBulto ? `${a.unidadesBulto} unidades` : '—')}</td><td className="money">{dinero(a.precioUnidad)}</td><td className="money">{dinero(a.precioBulto)}</td></tr>)}</tbody></table></div><p className="hint">“Usar en nuevo pedido” carga exactamente estos precios en el catálogo correspondiente y abre un pedido nuevo.</p><div className="toolbar"><button onClick={() => setDetalle(null)}>Cerrar</button><button onClick={() => descargar(detalle)}>Descargar PDF</button><button className="primary" disabled={usando === detalle.id} onClick={() => usarEnPedido(detalle)}>{usando === detalle.id ? 'Cargando…' : 'Usar en nuevo pedido'}</button></div></section></div>}
+    {detalle && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Detalle de lista"><h2>Lista #{detalle.id} · {detalle.tipo === 'general' ? 'Combinada' : detalle.tipo === 'mf' ? 'MF' : 'Descartables'}</h2><p>{fecha(detalle.creadoEn)} · {detalle.cantidad} artículos</p><div className="preview"><table><thead><tr><th>Categoría</th><th>Código</th><th>Artículo</th><th>Presentación</th><th>Precio unidad</th><th>Precio bulto</th></tr></thead><tbody>{detalle.items.map((a, i) => <tr key={`${a.codigo}-${i}`}><td>{({ snacks: 'Snacks', descartables: 'Descartables', mf: 'Dietética', frutos_secos: 'Frutos secos' })[a.grupo] || '—'}</td><td>{a.codigo || '—'}</td><td>{a.nombre}</td><td>{a.presentacion || (a.unidadesBulto ? `${a.unidadesBulto} unidades` : '—')}</td><td className="money">{dinero(a.precioUnidad)}</td><td className="money">{dinero(a.precioBulto)}</td></tr>)}</tbody></table></div><p className="hint">“Usar en nuevo pedido” carga exactamente estos precios en los catálogos correspondientes y abre un pedido nuevo.</p><div className="toolbar"><button onClick={() => setDetalle(null)}>Cerrar</button><button onClick={() => descargar(detalle)}>Descargar PDF</button><button className="primary" disabled={usando === detalle.id} onClick={() => usarEnPedido(detalle)}>{usando === detalle.id ? 'Cargando…' : 'Usar en nuevo pedido'}</button></div></section></div>}
   </div></Layout>;
 }
