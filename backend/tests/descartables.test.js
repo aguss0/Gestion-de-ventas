@@ -80,9 +80,10 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
     await prisma.articulo.updateMany({ where: { descartableId: a.id }, data: { precio: 1 } });
     const usarHistorico = await fetch(historialBase + '/' + historicoCreado.id + '/precios', { method: 'POST' });
     assert.equal(usarHistorico.status, 200);
+    const preciosParaPedido = await usarHistorico.json();
+    assert.deepEqual(new Set(preciosParaPedido.precios.map(p => p.precio)), new Set([2097.99, 23239.26]));
     const preciosHistoricos = await prisma.articulo.findMany({ where: { descartableId: a.id } });
-    assert.equal(preciosHistoricos.find(v => v.presentacion === 'unidad').precio, 2097.99);
-    assert.equal(preciosHistoricos.find(v => v.presentacion === 'bulto').precio, 23239.26);
+    assert.ok(preciosHistoricos.every(v => v.precio === 1));
     assert.equal((await fetch(historialBase + '?tipo=invalido')).status, 400);
     assert.equal((await json('/precios', { ids: [a.id], recargoUnidad: -1, recargoBulto: 0 })).status, 400);
     const cliente = await prisma.cliente.create({ data: { nombre: 'Prueba' } });

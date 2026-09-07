@@ -85,6 +85,7 @@ export function NuevoPedido() {
   const [nroOrden, setNroOrden] = useState("");
   const [descuento, setDescuento] = useState(0);
   const [catalogo, setCatalogo] = useState(location.state?.catalogo || 'papas');
+  const preciosLista = new Map((location.state?.preciosLista || []).map(item => [Number(item.articuloId), Number(item.precio)]));
 
   const { data: clientes  = [] } = useQuery({ queryKey: ["clientes"],  queryFn: clienteService.listar });
   const { data: articulos = [] } = useQuery({ queryKey: ["articulos"], queryFn: articuloService.listar });
@@ -118,10 +119,11 @@ export function NuevoPedido() {
   }, [pedidoEditar]);
 
   const articulo = articulos.find(a => a.id === Number(articuloId));
+  const precioArticulo = articulo ? (preciosLista.get(articulo.id) ?? Number(articulo.precio || 0)) : 0;
   const total    = items.reduce((s, i) => s + i.subtotal, 0);
   const precioConDescuento = precioCustom
   ? Number(precioCustom)
-  : Number(articulo?.precio || 0) * (1 - Number(descuento) / 100);
+  : precioArticulo * (1 - Number(descuento) / 100);
 
   const agregarItem = (e) => {
     e.preventDefault();
@@ -287,7 +289,7 @@ export function NuevoPedido() {
                     <div>
                       <div style={{ fontWeight: 500 }}>{a.nombre}</div>
                       <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                        {a.unidadCaja && `${a.unidadCaja} · `}{fmt(a.precio)}
+                        {a.unidadCaja && `${a.unidadCaja} · `}{fmt(preciosLista.get(a.id) ?? a.precio)}{preciosLista.has(a.id) && ' · Precio de lista'}
                       </div>
                     </div>
                   )}
@@ -299,7 +301,7 @@ export function NuevoPedido() {
               </div>
               <div>
                 <label style={labelStyle}>
-                  Precio {articulo ? <strong style={{ color: "var(--primary)" }}>({fmt(articulo.precio)})</strong> : ""}
+                  Precio {articulo ? <strong style={{ color: "var(--primary)" }}>({fmt(precioArticulo)})</strong> : ""}
                 </label>
                 <input type="text" inputMode="numeric" style={inputStyle} value={precioCustom} onChange={e => setPrecioCustom(e.target.value)} placeholder="Automático" />
               </div>
@@ -322,7 +324,7 @@ export function NuevoPedido() {
               {articulo && Number(descuento) > 0 && (
                 <div style={{ background: "#fef9c3", borderRadius: 6, padding: "6px 12px", marginTop: 8, fontSize: 12 }}>
                   Precio con {descuento}% descuento: <strong style={{ color: "var(--success)" }}>${precioConDescuento.toLocaleString("es-AR")}</strong>
-                  {" · "}Ahorro: <strong style={{ color: "var(--danger)" }}>${(Number(articulo.precio) - precioConDescuento).toLocaleString("es-AR")}</strong>
+                  {" · "}Ahorro: <strong style={{ color: "var(--danger)" }}>${(precioArticulo - precioConDescuento).toLocaleString("es-AR")}</strong>
                 </div>
               )}
 
