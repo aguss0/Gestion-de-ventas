@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -13,6 +13,7 @@ const dinero = valor => valor == null ? '—' : Number(valor).toLocaleString('es
 
 export function HistorialListas() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [tipo, setTipo] = useState('todos');
   const [detalle, setDetalle] = useState(null);
   const [abriendo, setAbriendo] = useState(null);
@@ -35,6 +36,7 @@ export function HistorialListas() {
     setUsando(lista.id);
     try {
       const respuesta = await api.post(`/historial-listas/${lista.id}/precios`);
+      await qc.invalidateQueries({ queryKey: ['articulos'] });
       toast.success('Precios aplicados únicamente a este pedido nuevo.');
       const predeterminado = lista.tipo === 'mf' ? 'mf' : 'descartables';
       navigate('/pedidos/nuevo', { state: { catalogo: respuesta?.data?.catalogo || predeterminado, preciosLista: respuesta?.data?.precios || [] } });
@@ -50,7 +52,7 @@ export function HistorialListas() {
     <div className="table-wrap"><table><thead><tr><th>N.º</th><th>Fecha</th><th>Tipo</th><th>Artículos</th><th>Recargo unidad</th><th>Recargo bulto</th><th>Acciones</th></tr></thead><tbody>
       {isLoading && <tr><td colSpan="7">Cargando…</td></tr>}
       {!isLoading && !listas.length && <tr><td colSpan="7">Todavía no hay listas guardadas.</td></tr>}
-      {listas.map(lista => <tr key={lista.id}><td>#{lista.id}</td><td>{fecha(lista.creadoEn)}</td><td>{lista.tipo === 'general' ? 'Combinada' : lista.tipo === 'mf' ? 'MF' : 'Descartables'}</td><td>{lista.cantidad}</td><td>{lista.tipo === 'general' ? 'Según grupo' : `${lista.recargoUnidad}%`}</td><td>{lista.tipo === 'general' ? 'Según grupo' : `${lista.recargoBulto}%`}</td><td><button className="primary" disabled={abriendo === lista.id} onClick={() => ver(lista.id)}>{abriendo === lista.id ? 'Abriendo…' : 'Ver y descargar'}</button></td></tr>)}
+      {listas.map(lista => <tr key={lista.id}><td>#{lista.id}</td><td>{fecha(lista.creadoEn)}</td><td>{lista.tipo === 'general' ? 'Combinada' : lista.tipo === 'mf' ? 'MF' : 'Descartables'}</td><td>{lista.cantidad}</td><td>{lista.tipo === 'general' ? 'Según grupo' : `${lista.recargoUnidad}%`}</td><td>{lista.tipo === 'general' ? 'Según grupo' : `${lista.recargoBulto}%`}</td><td><div className="acciones-historial"><button className="primary" disabled={abriendo === lista.id} onClick={() => ver(lista.id)}>{abriendo === lista.id ? 'Abriendo…' : 'Ver y descargar'}</button><button className="primary" disabled={usando === lista.id} onClick={() => usarEnPedido(lista)}>{usando === lista.id ? 'Cargando…' : 'Usar en pedido'}</button></div></td></tr>)}
     </tbody></table></div>
     {detalle && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Detalle de lista"><h2>Lista #{detalle.id} · {detalle.tipo === 'general' ? 'Combinada' : detalle.tipo === 'mf' ? 'MF' : 'Descartables'}</h2><p>{fecha(detalle.creadoEn)} · {detalle.cantidad} artículos</p><div className="preview"><table><thead><tr><th>Categoría</th><th>Código</th><th>Artículo</th><th>Presentación</th><th>Precio unidad</th><th>Precio bulto</th></tr></thead><tbody>{detalle.items.map((a, i) => <tr key={`${a.codigo}-${i}`}><td>{({ snacks: 'Snacks', descartables: 'Descartables', mf: 'Dietética', frutos_secos: 'Frutos secos' })[a.grupo] || '—'}</td><td>{a.codigo || '—'}</td><td>{a.nombre}</td><td>{a.presentacion || (a.unidadesBulto ? `${a.unidadesBulto} unidades` : '—')}</td><td className="money">{dinero(a.precioUnidad)}</td><td className="money">{dinero(a.precioBulto)}</td></tr>)}</tbody></table></div><p className="hint">“Usar en nuevo pedido” aplica estos valores solamente al pedido que se abre. Los precios base nunca se modifican.</p><div className="toolbar"><button onClick={() => setDetalle(null)}>Cerrar</button><button onClick={() => descargar(detalle)}>Descargar PDF</button><button className="primary" disabled={usando === detalle.id} onClick={() => usarEnPedido(detalle)}>{usando === detalle.id ? 'Cargando…' : 'Usar en nuevo pedido'}</button></div></section></div>}
   </div></Layout>;

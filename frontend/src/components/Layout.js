@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const nav = [
+  { path: "/tienda-online", label: "Tienda Online", icono: "↗" },
   { path: "/pedidos",       label: "Pedidos",         icono: "🧾" },
   { path: "/estadocuenta",  label: "Estado de cuenta", icono: "💰" },
   { path: "/pagos",         label: "Pagos",            icono: "💳" },

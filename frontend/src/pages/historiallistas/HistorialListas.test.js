@@ -14,6 +14,8 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: jest.fn() }),
 }));
 
+beforeEach(() => jest.clearAllMocks());
+
 test('consulta la fotografía de una lista guardada', async () => {
   render(<HistorialListas />);
   expect(screen.getByText('#7')).toBeTruthy();
@@ -30,5 +32,13 @@ test('carga los precios históricos y abre un pedido nuevo', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Ver y descargar' }));
   await waitFor(() => screen.getByRole('button', { name: 'Usar en nuevo pedido' }));
   fireEvent.click(screen.getByRole('button', { name: 'Usar en nuevo pedido' }));
+  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/pedidos/nuevo', { state: { catalogo: 'descartables', preciosLista: [{ articuloId: 11, precio: 2097.99 }] } }));
+});
+
+test('abre un pedido directamente desde el historial', async () => {
+  api.post.mockResolvedValueOnce({ data: { precios: [{ articuloId: 11, precio: 2097.99 }], catalogo: 'descartables' } });
+  render(<HistorialListas />);
+  fireEvent.click(screen.getByRole('button', { name: 'Usar en pedido' }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith('/historial-listas/7/precios'));
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/pedidos/nuevo', { state: { catalogo: 'descartables', preciosLista: [{ articuloId: 11, precio: 2097.99 }] } }));
 });

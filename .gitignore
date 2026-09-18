@@ -1,0 +1,15 @@
+# Archivos locales: no distribuir con las actualizaciones
+**/node_modules/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite3
+**/*.sqlite-*
+**/data/
+**/backups/
+**/respaldos/
+**/*.log
+/tmp/

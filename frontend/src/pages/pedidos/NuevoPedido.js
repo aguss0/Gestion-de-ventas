@@ -272,7 +272,7 @@ export function NuevoPedido() {
             </select>
           </div>
           {catalogo !== 'papas' && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 0 }}>
-            Estos artículos no generan comisiones. Sus ventas se muestran en {catalogo === 'mf' ? 'MF' : catalogo === 'dietetica' ? 'Dietética' : 'Descartables'}. {catalogo === 'dietetica' ? 'Cargá los artículos y registrá sus compras en Dietética para disponer de stock.' : 'Para agregarlos al catálogo de venta, usá “Usar estos precios en pedidos” en esa sección.'}
+            Estos artículos no generan comisiones. Sus ventas se muestran en {catalogo === 'mf' ? 'MF' : catalogo === 'dietetica' ? 'Dietética' : 'Descartables'}. {catalogo === 'dietetica' ? 'Cargá los artículos y registrá sus compras en Dietética para disponer de stock.' : 'Para usar una lista de precios, elegí “Usar en pedido” en el historial de Listas de precios.'}
           </p>}
           <form onSubmit={agregarItem}>
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "flex-end" }}>

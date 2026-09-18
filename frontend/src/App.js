@@ -16,6 +16,8 @@ import { DieteticaStock } from "./pages/dietetica/DieteticaStock";
 import { HistorialListas } from "./pages/historiallistas/HistorialListas";
 
 
+import { TiendaOnline } from "./pages/tiendaonline/TiendaOnline";
+
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -23,6 +25,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          <Route path="/tienda-online" element={<TiendaOnline />} />
           <Route path="/"                element={<Navigate to="/pedidos" />} />
           <Route path="/pedidos"         element={<Pedidos />} />
           <Route path="/pedidos/nuevo"   element={<NuevoPedido />} />

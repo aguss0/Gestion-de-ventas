@@ -30,3 +30,6 @@
 .descartables .acciones-lista { justify-content: flex-end; }
 .descartables .acciones-lista strong { margin-right: auto; }
 .descartables .separador-listas { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
+
+.descartables .acciones-historial { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.descartables .acciones-historial button { white-space: nowrap; }

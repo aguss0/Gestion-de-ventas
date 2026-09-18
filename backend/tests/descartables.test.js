@@ -84,6 +84,19 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
     assert.deepEqual(new Set(preciosParaPedido.precios.map(p => p.precio)), new Set([2097.99, 23239.26]));
     const preciosHistoricos = await prisma.articulo.findMany({ where: { descartableId: a.id } });
     assert.ok(preciosHistoricos.every(v => v.precio === 1));
+    const mfNuevo = await prisma.dietetica.create({ data: { codigo: 'MF-NUEVO', nombre: 'Almendra prueba', categoria: 'Prueba', presentacion: '10 KG' } });
+    const combinada = await (await fetch(historialBase, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'general', recargoUnidad: 0, recargoBulto: 0, items: [
+      { grupo: 'mf', codigo: mfNuevo.codigo, nombre: mfNuevo.nombre, precioUnidad: 18900, precioBulto: 185000 },
+      { grupo: 'descartables', codigo: a.codigo, nombre: a.nombre, precioUnidad: 2097.99, precioBulto: 23239.26 },
+    ] }) })).json();
+    await prisma.articulo.updateMany({ where: { descartableId: a.id }, data: { activo: false } });
+    const usarCombinada = () => fetch(historialBase + '/' + combinada.id + '/precios', { method: 'POST' });
+    const primera = await usarCombinada();
+    assert.equal(primera.status, 200);
+    assert.equal((await primera.json()).precios.length, 4);
+    assert.equal((await usarCombinada()).status, 200);
+    assert.equal(await prisma.articulo.count({ where: { dieteticaId: mfNuevo.id } }), 2);
+    assert.ok((await prisma.articulo.findMany({ where: { descartableId: a.id } })).every(v => v.activo && v.precio === 1));
     assert.equal((await fetch(historialBase + '?tipo=invalido')).status, 400);
     assert.equal((await json('/precios', { ids: [a.id], recargoUnidad: -1, recargoBulto: 0 })).status, 400);
     const cliente = await prisma.cliente.create({ data: { nombre: 'Prueba' } });

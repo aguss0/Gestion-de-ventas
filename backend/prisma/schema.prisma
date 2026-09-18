@@ -35,6 +35,10 @@ model Articulo {
   unidadCaja  String?  @map("unidad_caja")
   precio      Float
   activo      Boolean  @default(true)
+  precioOnline Float? @map("precio_online")
+  publicarOnline Boolean @default(false) @map("publicar_online")
+  categoriaOnline String? @map("categoria_online")
+  imagenUrl String? @map("imagen_url")
   manejaStock Boolean  @default(false) @map("maneja_stock")
   stock       Int      @default(0)
   stockMinimo Int      @default(0) @map("stock_minimo")

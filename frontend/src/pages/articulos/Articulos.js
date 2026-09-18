@@ -19,6 +19,7 @@ const svc = {
 function ModalArticulo({ articulo, onClose, onGuardado, conStock }) {
   const esEdicion = !!articulo;
   const [form, setForm] = useState({
+  publicarOnline: articulo?.publicarOnline ?? false,
   codigo:       articulo?.codigo       || "",
   nombre:       articulo?.nombre       || "",
   descripcion:  articulo?.descripcion  || "",
@@ -94,6 +95,11 @@ function ModalArticulo({ articulo, onClose, onGuardado, conStock }) {
             </div>
             <div><label style={labelStyle}>Precio *</label><input style={inputStyle} type="number" value={form.precio} onChange={set("precio")} required min="0" /></div>
           </div>
+
+          <label style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+            <input type="checkbox" checked={form.publicarOnline} onChange={e => setForm(f => ({ ...f, publicarOnline: e.target.checked }))} />
+            Publicar online (se aplica al sincronizar)
+          </label>
 
           {/* Stock */}
           <div style={{ background: "var(--bg)", borderRadius: 8, padding: "12px 14px", marginBottom: 12 }}>

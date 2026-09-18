@@ -9,6 +9,8 @@ app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "5mb" }));
 app.use(morgan("dev"));
 
+app.use("/api/tienda-online", require("./routes/tiendaOnline"));
+
 // ─── Rutas API ───────────────────────────────────────────────
 app.use("/api/clientes",     require("./routes/clientes"));
 app.use("/api/articulos",    require("./routes/articulos"));

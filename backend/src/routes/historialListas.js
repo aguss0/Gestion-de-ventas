@@ -55,43 +55,55 @@ router.post('/', async (req, res) => {
 router.post('/:id/precios', async (req, res) => {
   const dato = await prisma.historialListaPrecio.findUnique({ where: { id: Number(req.params.id) } });
   if (!dato) return res.status(404).json({ error: 'Lista no encontrada' });
-  const items = validarItems(JSON.parse(dato.contenido));
-  const grupoDe = item => item.grupo || (dato.tipo === 'mf' ? 'mf' : 'descartables');
-  const codigosDesc = items.filter(i => grupoDe(i) === 'descartables').map(i => i.codigo).filter(Boolean);
-  const codigosMf = items.filter(i => grupoDe(i) === 'mf').map(i => i.codigo).filter(Boolean);
-  const idsDirectos = items.filter(i => ['snacks', 'frutos_secos'].includes(grupoDe(i))).map(i => i.articuloId).filter(Boolean);
-  const [descartables, mf, directos] = await Promise.all([
-    prisma.descartable.findMany({ where: { codigo: { in: codigosDesc } }, include: { articulos: true } }),
-    prisma.dietetica.findMany({ where: { codigo: { in: codigosMf } }, include: { articulos: true } }),
-    prisma.articulo.findMany({ where: { id: { in: idsDirectos }, activo: true } }),
-  ]);
-  const mapas = {
-    descartables: new Map(descartables.map(a => [a.codigo, a])),
-    mf: new Map(mf.map(a => [a.codigo, a])),
-    directos: new Map(directos.map(a => [a.id, a])),
-  };
-  const precios = [];
-  for (const item of items) {
-    const grupo = grupoDe(item);
-    if (['snacks', 'frutos_secos'].includes(grupo)) {
-      const articulo = mapas.directos.get(item.articuloId);
-      const grupoCorrecto = articulo && articulo.descartableId == null && articulo.dieteticaId == null && Boolean(articulo.manejaStock) === (grupo === 'frutos_secos');
-      if (!grupoCorrecto) throw fallo(`El artículo ${item.nombre} ya no está disponible en su catálogo`);
-      precios.push({ articuloId: articulo.id, precio: item.precioUnidad });
-      continue;
+  const resultado = await prisma.$transaction(async tx => {
+    const items = validarItems(JSON.parse(dato.contenido));
+    const grupoDe = item => item.grupo || (dato.tipo === 'mf' ? 'mf' : 'descartables');
+    const codigosDesc = items.filter(i => grupoDe(i) === 'descartables').map(i => i.codigo).filter(Boolean);
+    const codigosMf = items.filter(i => grupoDe(i) === 'mf').map(i => i.codigo).filter(Boolean);
+    const idsDirectos = items.filter(i => ['snacks', 'frutos_secos'].includes(grupoDe(i))).map(i => i.articuloId).filter(Boolean);
+    const [descartables, mf, directos] = await Promise.all([
+      tx.descartable.findMany({ where: { codigo: { in: codigosDesc } } }),
+      tx.dietetica.findMany({ where: { codigo: { in: codigosMf } }, include: { articulos: true } }),
+      tx.articulo.findMany({ where: { id: { in: idsDirectos }, activo: true } }),
+    ]);
+    const mapas = {
+      descartables: new Map(descartables.map(a => [a.codigo, a])),
+      mf: new Map(mf.map(a => [a.codigo, a])),
+      directos: new Map(directos.map(a => [a.id, a])),
+    };
+    const precios = [];
+    for (const item of items) {
+      const grupo = grupoDe(item);
+      if (['snacks', 'frutos_secos'].includes(grupo)) {
+        const articulo = mapas.directos.get(item.articuloId);
+        const grupoCorrecto = articulo && articulo.descartableId == null && articulo.dieteticaId == null && Boolean(articulo.manejaStock) === (grupo === 'frutos_secos');
+        if (!grupoCorrecto) throw fallo(`El artículo ${item.nombre} ya no está disponible en su catálogo`);
+        precios.push({ articuloId: articulo.id, precio: item.precioUnidad });
+        continue;
+      }
+      const origen = mapas[grupo]?.get(item.codigo);
+      if (!origen) throw fallo(`El artículo ${item.nombre} ya no está disponible en su catálogo`);
+      for (const [presentacion, precio] of [['unidad', item.precioUnidad], ['bulto', item.precioBulto]]) {
+        if (precio == null) continue;
+        const relacion = grupo === 'mf' ? 'dieteticaId' : 'descartableId';
+        const articulo = await tx.articulo.upsert({
+          where: { [relacion + '_presentacion']: { [relacion]: origen.id, presentacion } },
+          create: {
+            [relacion]: origen.id, presentacion, precio,
+            nombre: origen.nombre + ' (' + presentacion + ')',
+            unidadCaja: presentacion === 'unidad' ? (grupo === 'mf' ? 'Unidad/kg según lista' : '1 unidad') : (origen.presentacion || origen.unidadesBulto + ' unidades'),
+            unidadMedida: presentacion,
+          },
+          update: { activo: true },
+        });
+        precios.push({ articuloId: articulo.id, precio });
+      }
     }
-    const origen = mapas[grupo]?.get(item.codigo);
-    if (!origen) throw fallo(`El artículo ${item.nombre} ya no está disponible en su catálogo`);
-    for (const [presentacion, precio] of [['unidad', item.precioUnidad], ['bulto', item.precioBulto]]) {
-      if (precio == null) continue;
-      const articulo = origen.articulos.find(a => a.presentacion === presentacion && a.activo);
-      if (!articulo) throw fallo(`${item.nombre} (${presentacion}) todavía no está habilitado en Pedidos`);
-      precios.push({ articuloId: articulo.id, precio });
-    }
-  }
-  const primerGrupo = items[0].grupo || (dato.tipo === 'mf' ? 'mf' : 'descartables');
-  const catalogos = { snacks: 'papas', descartables: 'descartables', mf: 'mf', frutos_secos: 'dietetica' };
-  res.json({ precios, catalogo: catalogos[primerGrupo] });
+    const primerGrupo = items[0].grupo || (dato.tipo === 'mf' ? 'mf' : 'descartables');
+    const catalogos = { snacks: 'papas', descartables: 'descartables', mf: 'mf', frutos_secos: 'dietetica' };
+    return { precios, catalogo: catalogos[primerGrupo] };
+  }, { timeout: 120000 });
+  res.json(resultado);
 });
 
 module.exports = router;
