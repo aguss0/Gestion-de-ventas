@@ -20,6 +20,10 @@ model Cliente {
   activo     Boolean  @default(true)
   creadoEn   DateTime @default(now()) @map("creado_en")
   vendedorId Int?     @map("vendedor_id")
+  comisionPct Float?  @map("comision_pct")
+  comisionMiguelPct  Float @default(0) @map("comision_miguel_pct")
+  comisionGerardoPct Float @default(0) @map("comision_gerardo_pct")
+  comisionTurkoPct   Float @default(0) @map("comision_turko_pct")
 
   vendedor Vendedor? @relation(fields: [vendedorId], references: [id])
   pedidos  Pedido[]
@@ -117,6 +121,9 @@ model Pedido {
   observaciones String?
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
+  comisionMiguelPct  Float? @map("comision_miguel_pct")
+  comisionGerardoPct Float? @map("comision_gerardo_pct")
+  comisionTurkoPct   Float? @map("comision_turko_pct")
 
   cliente  Cliente         @relation(fields: [clienteId], references: [id])
   vendedor Vendedor?       @relation(fields: [vendedorId], references: [id])

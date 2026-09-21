@@ -1,6 +1,22 @@
 const router = require("express").Router();
 const prisma = require("../utils/prisma");
 
+function normalizarComisionPct(valor) {
+  const porcentaje = Number(valor);
+  if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+    throw { status: 400, message: "El porcentaje de comisión debe estar entre 0 y 100" };
+  }
+  return porcentaje;
+}
+
+function comisionesDesde(body, parciales = false) {
+  const campos = ["comisionMiguelPct", "comisionGerardoPct", "comisionTurkoPct"];
+  return Object.fromEntries(campos.map(campo => [
+    campo,
+    parciales && body[campo] === undefined ? undefined : normalizarComisionPct(body[campo] ?? 0),
+  ]));
+}
+
 router.get("/", async (_req, res) => {
   const data = await prisma.cliente.findMany({
     include: { vendedor: { select: { id: true, nombre: true } } },
@@ -10,7 +26,7 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId } = req.body;
+  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, comisionPct = 4 } = req.body;
   if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
   const data = await prisma.cliente.create({
     data: {
@@ -22,16 +38,24 @@ router.post("/", async (req, res) => {
       barrio:     barrio     || null,
       tipo:       tipo       || null,
       vendedorId: vendedorId ? Number(vendedorId) : null,
+      comisionPct: normalizarComisionPct(comisionPct),
+      ...comisionesDesde(req.body),
     },
   });
   res.status(201).json(data);
 });
 
 router.patch("/:id", async (req, res) => {
-  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, activo } = req.body;
+  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, comisionPct, activo } = req.body;
   const data = await prisma.cliente.update({
     where: { id: Number(req.params.id) },
-    data:  { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId: vendedorId ? Number(vendedorId) : null, activo },
+    data:  {
+      nombre, cuit, email, telefono, direccion, barrio, tipo,
+      vendedorId: vendedorId ? Number(vendedorId) : null,
+      comisionPct: comisionPct === undefined ? undefined : normalizarComisionPct(comisionPct),
+      ...comisionesDesde(req.body, true),
+      activo,
+    },
   });
   res.json(data);
 });

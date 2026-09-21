@@ -2,6 +2,15 @@ const router = require("express").Router();
 const prisma = require("../utils/prisma");
 const { actualizarComisionPedido } = require("../utils/comisionPedido");
 
+async function porcentajesComisionCliente(tx, clienteId) {
+  const cliente = await tx.cliente.findUnique({
+    where: { id: Number(clienteId) },
+    select: { comisionMiguelPct: true, comisionGerardoPct: true, comisionTurkoPct: true },
+  });
+  if (!cliente) throw { status: 400, message: "Cliente no encontrado" };
+  return cliente;
+}
+
 // Libera un número ocupado por un pedido eliminado sin borrar su historial.
 // Los pedidos archivados reciben un número negativo reservado internamente.
 async function liberarNroOrdenInactivo(tx, nroOrden, pedidoActualId = null) {
@@ -87,6 +96,7 @@ router.post("/", async (req, res) => {
 
   const pedido = await prisma.$transaction(async (tx) => {
     await liberarNroOrdenInactivo(tx, nroOrden);
+    const porcentajes = await porcentajesComisionCliente(tx, clienteId);
 
     // 1. Crear pedido
     const p = await tx.pedido.create({
@@ -98,6 +108,7 @@ router.post("/", async (req, res) => {
         total,
         saldo:      total,
         observaciones,
+        ...porcentajes,
       },
     });
 
@@ -201,6 +212,8 @@ router.patch("/:id", async (req, res) => {
       include: { detalle: { include: { articulo: true } } },
     });
     if (!anterior) throw { status: 404, message: "Pedido no encontrado" };
+    const cambiaCliente = Number(clienteId) !== anterior.clienteId;
+    const porcentajes = cambiaCliente ? await porcentajesComisionCliente(tx, clienteId) : {};
 
     const nuevoNroOrden = Number(nroOrden);
     if (nuevoNroOrden !== anterior.nroOrden) {
@@ -255,6 +268,7 @@ router.patch("/:id", async (req, res) => {
         observaciones: observaciones || null,
         total,
         saldo: Math.max(0, total - anterior.totalPagado),
+        ...porcentajes,
       },
     });
 
