@@ -2,13 +2,13 @@ const router = require("express").Router();
 const prisma = require("../utils/prisma");
 const { actualizarComisionPedido } = require("../utils/comisionPedido");
 
-async function porcentajesComisionCliente(tx, clienteId) {
+async function configuracionComisionCliente(tx, clienteId) {
   const cliente = await tx.cliente.findUnique({
     where: { id: Number(clienteId) },
-    select: { comisionMiguelPct: true, comisionGerardoPct: true, comisionTurkoPct: true },
+    include: { comisionesVendedores: { select: { vendedorId: true, porcentaje: true } } },
   });
   if (!cliente) throw { status: 400, message: "Cliente no encontrado" };
-  return cliente;
+  return cliente.comisionesVendedores;
 }
 
 // Libera un número ocupado por un pedido eliminado sin borrar su historial.
@@ -96,7 +96,7 @@ router.post("/", async (req, res) => {
 
   const pedido = await prisma.$transaction(async (tx) => {
     await liberarNroOrdenInactivo(tx, nroOrden);
-    const porcentajes = await porcentajesComisionCliente(tx, clienteId);
+    const comisionesCliente = await configuracionComisionCliente(tx, clienteId);
 
     // 1. Crear pedido
     const p = await tx.pedido.create({
@@ -108,9 +108,14 @@ router.post("/", async (req, res) => {
         total,
         saldo:      total,
         observaciones,
-        ...porcentajes,
       },
     });
+
+    if (comisionesCliente.length) {
+      await tx.pedidoComisionVendedor.createMany({
+        data: comisionesCliente.map(c => ({ pedidoId: p.id, vendedorId: c.vendedorId, porcentaje: c.porcentaje })),
+      });
+    }
 
     // 2. Crear detalle
     await tx.detallePedido.createMany({
@@ -213,7 +218,7 @@ router.patch("/:id", async (req, res) => {
     });
     if (!anterior) throw { status: 404, message: "Pedido no encontrado" };
     const cambiaCliente = Number(clienteId) !== anterior.clienteId;
-    const porcentajes = cambiaCliente ? await porcentajesComisionCliente(tx, clienteId) : {};
+    const comisionesCliente = cambiaCliente ? await configuracionComisionCliente(tx, clienteId) : null;
 
     const nuevoNroOrden = Number(nroOrden);
     if (nuevoNroOrden !== anterior.nroOrden) {
@@ -268,9 +273,17 @@ router.patch("/:id", async (req, res) => {
         observaciones: observaciones || null,
         total,
         saldo: Math.max(0, total - anterior.totalPagado),
-        ...porcentajes,
       },
     });
+
+    if (comisionesCliente !== null) {
+      await tx.pedidoComisionVendedor.deleteMany({ where: { pedidoId } });
+      if (comisionesCliente.length) {
+        await tx.pedidoComisionVendedor.createMany({
+          data: comisionesCliente.map(c => ({ pedidoId, vendedorId: c.vendedorId, porcentaje: c.porcentaje })),
+        });
+      }
+    }
 
     await actualizarComisionPedido(tx, pedidoId);
 
@@ -375,6 +388,7 @@ router.delete("/:id", async (req, res) => {
       }
     }
 
+    await tx.pedidoComisionVendedor.deleteMany({ where: { pedidoId } });
     await tx.comision.deleteMany({ where: { pedidoId } });
     await tx.pago.deleteMany({ where: { pedidoId } });
     await tx.detallePedido.deleteMany({ where: { pedidoId } });

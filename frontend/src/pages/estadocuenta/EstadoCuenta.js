@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "../../components/Layout";
 import { SelectorCliente } from "../../components/SelectorCliente";
@@ -18,6 +18,7 @@ export function EstadoCuenta() {
   const [hasta, setHasta]               = useState("");
   const [categoria, setCategoria] = useState('todas');
   const [clienteId, setClienteId] = useState('');
+  const [pedidoExpandido, setPedidoExpandido] = useState(null);
 
   const { data: pedidos = [], isLoading, error } = useQuery({
     queryKey: ["estadocuenta"],
@@ -134,26 +135,80 @@ export function EstadoCuenta() {
             {!isLoading && pedidosFiltrados.length === 0 && (
               <tr><td colSpan={8} style={{ textAlign: "center", padding: 32, color: "var(--muted)" }}>No hay pedidos para los filtros seleccionados</td></tr>
             )}
-            {pedidosFiltrados.map(p => (
-              <tr key={p.id}
-                style={{ borderBottom: "1px solid var(--border)", background: p.saldo <= 0 ? "#f0fdf4" : "#fff" }}
-                onMouseEnter={e => e.currentTarget.style.background = p.saldo <= 0 ? "#dcfce7" : "var(--bg)"}
-                onMouseLeave={e => e.currentTarget.style.background = p.saldo <= 0 ? "#f0fdf4" : "#fff"}
-              >
-                <td style={{ padding: "10px 14px", fontWeight: 500 }}>#{p.nroOrden}<div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.categorias?.length > 1 ? 'Mixto: ' : ''}{p.categorias?.map(c => categorias[c]).join(' / ') || 'Sin artículos'}</div></td>
-                <td style={{ padding: "10px 14px", color: "var(--muted)" }}>{fmtFecha(p.fecha)}</td>
-                <td style={{ padding: "10px 14px" }}>{p.cliente}</td>
-                <td style={{ padding: "10px 14px", color: "var(--muted)" }}>{p.vendedor || "—"}</td>
-                <td style={{ padding: "10px 14px", fontWeight: 500 }}>{fmt(p.totalVenta)}</td>
-                <td style={{ padding: "10px 14px", color: "var(--success)" }}>{fmt(p.pagado)}</td>
-                <td style={{ padding: "10px 14px", fontWeight: 500, color: p.saldo > 0 ? "var(--danger)" : "var(--success)" }}>
-                  {p.saldo > 0 ? fmt(p.saldo) : "✓ Saldado"}
-                </td>
-                <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--muted)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {p.observaciones || "—"}
-                </td>
-              </tr>
-            ))}
+            {pedidosFiltrados.map(p => {
+              const expandido = pedidoExpandido === p.id;
+              return (
+                <Fragment key={p.id}>
+                  <tr
+                    onClick={() => setPedidoExpandido(expandido ? null : p.id)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setPedidoExpandido(expandido ? null : p.id);
+                      }
+                    }}
+                    tabIndex={0}
+                    aria-expanded={expandido}
+                    style={{ borderBottom: expandido ? "none" : "1px solid var(--border)", background: p.saldo <= 0 ? "#f0fdf4" : "#fff", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = p.saldo <= 0 ? "#dcfce7" : "var(--bg)"}
+                    onMouseLeave={e => e.currentTarget.style.background = p.saldo <= 0 ? "#f0fdf4" : "#fff"}
+                  >
+                    <td style={{ padding: "10px 14px", fontWeight: 500 }}>
+                      <span style={{ display: "inline-block", width: 16, color: "var(--muted)" }}>{expandido ? "▾" : "▸"}</span>
+                      #{p.nroOrden}
+                      <div style={{ marginLeft: 16, fontSize: 11, color: 'var(--muted)' }}>{p.categorias?.length > 1 ? 'Mixto: ' : ''}{p.categorias?.map(c => categorias[c]).join(' / ') || 'Sin artículos'}</div>
+                    </td>
+                    <td style={{ padding: "10px 14px", color: "var(--muted)" }}>{fmtFecha(p.fecha)}</td>
+                    <td style={{ padding: "10px 14px" }}>{p.cliente}</td>
+                    <td style={{ padding: "10px 14px", color: "var(--muted)" }}>{p.vendedor || "—"}</td>
+                    <td style={{ padding: "10px 14px", fontWeight: 500 }}>{fmt(p.totalVenta)}</td>
+                    <td style={{ padding: "10px 14px", color: "var(--success)" }}>{fmt(p.pagado)}</td>
+                    <td style={{ padding: "10px 14px", fontWeight: 500, color: p.saldo > 0 ? "var(--danger)" : "var(--success)" }}>
+                      {p.saldo > 0 ? fmt(p.saldo) : "✓ Saldado"}
+                    </td>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--muted)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.observaciones || "—"}
+                    </td>
+                  </tr>
+                  {expandido && (
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td colSpan={8} style={{ padding: "0 14px 16px 30px", background: p.saldo <= 0 ? "#f0fdf4" : "#f8fafc" }}>
+                        <div style={{ paddingTop: 10, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+                          Pagos del pedido ({p.pagos?.length || 0})
+                        </div>
+                        {!p.pagos?.length ? (
+                          <div style={{ padding: "10px 12px", color: "var(--muted)", background: "#fff", border: "1px solid var(--border)", borderRadius: 7 }}>
+                            Este pedido todavía no tiene pagos registrados.
+                          </div>
+                        ) : (
+                          <div style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: 7, background: "#fff" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                              <thead>
+                                <tr>
+                                  {["Fecha", "Forma de pago", "Importe", "Observaciones"].map(h => (
+                                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500 }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {p.pagos.map((pago, i) => (
+                                  <tr key={pago.id} style={{ borderBottom: i < p.pagos.length - 1 ? "1px solid var(--border)" : "none" }}>
+                                    <td style={{ padding: "8px 12px" }}>{fmtFecha(pago.fecha)}</td>
+                                    <td style={{ padding: "8px 12px" }}>{pago.metodo}</td>
+                                    <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--success)" }}>{fmt(pago.monto)}</td>
+                                    <td style={{ padding: "8px 12px", color: "var(--muted)" }}>{pago.observaciones || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

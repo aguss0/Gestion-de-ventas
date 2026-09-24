@@ -1,103 +1,69 @@
 const router = require("express").Router();
-const prisma  = require("../utils/prisma");
+const prisma = require("../utils/prisma");
 
-// GET todas las comisiones con filtros opcionales
+function filtroFecha(desde, hasta) {
+  if (!desde && !hasta) return {};
+  return {
+    fecha: {
+      ...(desde ? { gte: new Date(desde) } : {}),
+      ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
+    },
+  };
+}
+
+// Una fila por vendedor y pedido. Funciona también con vendedores creados después.
 router.get("/", async (req, res) => {
   const { desde, hasta } = req.query;
-
-  let pedidoIds = null;
-  if (desde || hasta) {
-    const pedidos = await prisma.pedido.findMany({
-      where: {
-        activo: true,
-        fecha: {
-          ...(desde ? { gte: new Date(desde) } : {}),
-          ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
-        }
-      },
-      select: { id: true },
-    });
-    pedidoIds = pedidos.map(p => p.id);
-  }
-
-  const where = {
-    pedido: { is: { activo: true } },
-    ...(pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {}),
-  };
-
-  const data = await prisma.comision.findMany({
-    where,
+  const data = await prisma.pedidoComisionVendedor.findMany({
+    where: {
+      monto: { gt: 0 },
+      pedido: { is: { activo: true, ...filtroFecha(desde, hasta) } },
+    },
     include: {
       pedido: {
         include: {
           cliente: true,
           detalle: { include: { articulo: true } },
-        }
+        },
       },
       vendedor: true,
     },
+    orderBy: [{ pedido: { nroOrden: "desc" } }, { vendedor: { nombre: "asc" } }],
   });
   res.json(data);
 });
 
-// GET resumen por vendedor con filtros opcionales
 router.get("/resumen", async (req, res) => {
   const { desde, hasta } = req.query;
+  const comisiones = await prisma.pedidoComisionVendedor.findMany({
+    where: {
+      monto: { gt: 0 },
+      pedido: { is: { activo: true, ...filtroFecha(desde, hasta) } },
+    },
+    include: { vendedor: { select: { id: true, nombre: true } } },
+  });
 
-  let pedidoIds = null;
-  if (desde || hasta) {
-    const pedidos = await prisma.pedido.findMany({
-      where: {
-        activo: true,
-        fecha: {
-          ...(desde ? { gte: new Date(desde) } : {}),
-          ...(hasta ? { lte: new Date(hasta + "T23:59:59") } : {}),
-        }
-      },
-      select: { id: true },
-    });
-    pedidoIds = pedidos.map(p => p.id);
+  const resumen = new Map();
+  for (const comision of comisiones) {
+    if (!resumen.has(comision.vendedorId)) {
+      resumen.set(comision.vendedorId, {
+        vendedorId: comision.vendedorId,
+        vendedor: comision.vendedor.nombre,
+        total: 0,
+        cobrado: 0,
+        pendiente: 0,
+      });
+    }
+    const fila = resumen.get(comision.vendedorId);
+    fila.total += comision.monto;
+    if (comision.cobrado) fila.cobrado += comision.monto;
+    else fila.pendiente += comision.monto;
   }
-
-  const where = {
-    pedido: { is: { activo: true } },
-    ...(pedidoIds !== null ? { pedidoId: { in: pedidoIds } } : {}),
-  };
-
-  const comisiones = await prisma.comision.findMany({ where });
-
-  // Sumar por persona, no por vendedor del pedido
-  const resumen = {
-    Miguel:  { vendedor: "Miguel",  total: 0, cobrado: 0, pendiente: 0 },
-    Gerardo: { vendedor: "Gerardo", total: 0, cobrado: 0, pendiente: 0 },
-    Turko:   { vendedor: "Turko",   total: 0, cobrado: 0, pendiente: 0 },
-  };
-
-  for (const c of comisiones) {
-    if (c.comisionMiguel > 0) {
-      resumen.Miguel.total += c.comisionMiguel;
-      if (c.cobrado) resumen.Miguel.cobrado   += c.comisionMiguel;
-      else           resumen.Miguel.pendiente += c.comisionMiguel;
-    }
-    if (c.comisionGerardo > 0) {
-      resumen.Gerardo.total += c.comisionGerardo;
-      if (c.cobrado) resumen.Gerardo.cobrado   += c.comisionGerardo;
-      else           resumen.Gerardo.pendiente += c.comisionGerardo;
-    }
-    if (c.comisionTurko > 0) {
-      resumen.Turko.total += c.comisionTurko;
-      if (c.cobrado) resumen.Turko.cobrado   += c.comisionTurko;
-      else           resumen.Turko.pendiente += c.comisionTurko;
-    }
-  }
-
-  // Solo devolver los que tienen algo
-  res.json(Object.values(resumen).filter(v => v.total > 0));
+  res.json([...resumen.values()].sort((a, b) => a.vendedor.localeCompare(b.vendedor)));
 });
 
-// DELETE comisiones antiguas cuyos pedidos fueron eliminados lógicamente.
 router.delete("/huerfanas", async (_req, res) => {
-  const resultado = await prisma.comision.deleteMany({
+  const resultado = await prisma.pedidoComisionVendedor.deleteMany({
     where: { pedido: { is: { activo: false } } },
   });
   res.json({
@@ -108,15 +74,11 @@ router.delete("/huerfanas", async (_req, res) => {
   });
 });
 
-// PATCH marcar cobrado/pendiente
 router.patch("/:id/cobrado", async (req, res) => {
-  const { cobrado } = req.body;
-  const data = await prisma.comision.update({
+  const cobrado = Boolean(req.body.cobrado);
+  const data = await prisma.pedidoComisionVendedor.update({
     where: { id: Number(req.params.id) },
-    data:  {
-      cobrado,
-      fechaCobro: cobrado ? new Date() : null,
-    },
+    data: { cobrado, fechaCobro: cobrado ? new Date() : null },
   });
   res.json(data);
 });

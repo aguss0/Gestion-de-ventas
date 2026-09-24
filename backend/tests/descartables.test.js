@@ -39,7 +39,7 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
       if (name === '20260902000000_descartables') {
         await prisma.$executeRawUnsafe("INSERT INTO articulos (nombre, precio) VALUES ('Artículo previo', 100)");
       }
-      const sql = fs.readFileSync(path.join(migrations, name, 'migration.sql'), 'utf8');
+      const sql = fs.readFileSync(path.join(migrations, name, 'migration.sql'), 'utf8').replace(/--.*$/gm, '');
       for (const statement of sql.split(';').filter(s => s.trim())) await prisma.$executeRawUnsafe(statement);
     }
     assert.equal((await prisma.articulo.findFirst()).precio, 100);
@@ -134,6 +134,7 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
     assert.equal((await prisma.descartable.findUnique({ where: { id: a.id } })).unidadesBulto, 17);
     assert.equal((await json('/completar-unidades', {})).data.completados, 0);
     const vendedor = await prisma.vendedor.create({ data: { nombre: 'Miguel' } });
+    await prisma.clienteComision.create({ data: { clienteId: cliente.id, vendedorId: vendedor.id, porcentaje: 10 } });
     const precioAntes = (await prisma.articulo.findUnique({ where: { id: variantes[0].id } })).precio;
     assert.equal((await json('/precios', { ids: [a.id, ambiguo.id], recargoUnidad: 50, recargoBulto: 50 })).status, 400);
     assert.equal((await prisma.articulo.findUnique({ where: { id: variantes[0].id } })).precio, precioAntes);
@@ -144,21 +145,21 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
     };
     const datos = { clienteId: cliente.id, vendedorId: vendedor.id, fecha: '2026-09-02', items: [{ articuloId: variantes[0].id, cantidad: 2, precio: 500 }] };
     const soloDescartables = await pedidoApi('', datos);
-    assert.equal(await prisma.comision.count({ where: { pedidoId: soloDescartables.id } }), 0);
+    assert.equal(await prisma.pedidoComisionVendedor.count({ where: { pedidoId: soloDescartables.id, monto: { gt: 0 } } }), 0);
     let resumenNuevo = await (await fetch(base + '/resumen')).json();
     assert.equal(resumenNuevo.ventas, 4575);
     const mixto = await pedidoApi('', { ...datos, items: [...datos.items, { articuloId: papa.id, cantidad: 3, precio: 100 }] });
-    let comision = await prisma.comision.findUnique({ where: { pedidoId: mixto.id } });
-    assert.equal(comision.importe, 300); assert.equal(comision.comisionMiguel, 30);
+    let comision = await prisma.pedidoComisionVendedor.findUnique({ where: { pedidoId_vendedorId: { pedidoId: mixto.id, vendedorId: vendedor.id } } });
+    assert.equal(comision.importe, 300); assert.equal(comision.monto, 30);
     const detallePapa = mixto.detalle.find(d => d.articuloId === papa.id);
     await pedidoApi(`/detalle/${detallePapa.id}/faltante`, { cantidadFaltante: 1 }, 'PATCH');
-    assert.equal((await prisma.comision.findUnique({ where: { pedidoId: mixto.id } })).importe, 200);
+    assert.equal((await prisma.pedidoComisionVendedor.findUnique({ where: { pedidoId_vendedorId: { pedidoId: mixto.id, vendedorId: vendedor.id } } })).importe, 200);
     await pedidoApi(`/${mixto.id}`, { ...datos, nroOrden: mixto.nroOrden }, 'PATCH');
-    assert.equal(await prisma.comision.count({ where: { pedidoId: mixto.id } }), 0);
+    assert.equal(await prisma.pedidoComisionVendedor.count({ where: { pedidoId: mixto.id, monto: { gt: 0 } } }), 0);
     await pedidoApi(`/${mixto.id}`, { vendedorId: vendedor.id }, 'PATCH');
-    assert.equal(await prisma.comision.count({ where: { pedidoId: mixto.id } }), 0);
+    assert.equal(await prisma.pedidoComisionVendedor.count({ where: { pedidoId: mixto.id, monto: { gt: 0 } } }), 0);
     await pedidoApi(`/${mixto.id}`, { ...datos, nroOrden: mixto.nroOrden, items: [{ articuloId: papa.id, cantidad: 2, precio: 100 }] }, 'PATCH');
-    assert.equal((await prisma.comision.findUnique({ where: { pedidoId: mixto.id } })).comisionMiguel, 20);
+    assert.equal((await prisma.pedidoComisionVendedor.findUnique({ where: { pedidoId_vendedorId: { pedidoId: mixto.id, vendedorId: vendedor.id } } })).monto, 20);
     await pedidoApi(`/${soloDescartables.id}`, null, 'DELETE');
     resumenNuevo = await (await fetch(base + '/resumen')).json();
     assert.equal(resumenNuevo.ventas, 3575);
@@ -171,7 +172,7 @@ test('migración aditiva, importación y ventas en una base temporal', { timeout
     assert.equal(variantesDiet.find(a => a.presentacion === 'bulto').precio, 65760);
     const ventaDiet = await pedidoApi('', { ...datos, items: [{ articuloId: variantesDiet.find(a => a.presentacion === 'unidad').id, cantidad: 6, precio: 5580 }] });
     assert.equal(ventaDiet.total, 33480);
-    assert.equal(await prisma.comision.count({ where: { pedidoId: ventaDiet.id } }), 0);
+    assert.equal(await prisma.pedidoComisionVendedor.count({ where: { pedidoId: ventaDiet.id, monto: { gt: 0 } } }), 0);
     assert.equal((await (await fetch(dietBase + '/resumen')).json()).ventas, 33480);
     assert.equal((await (await fetch(base + '/resumen')).json()).ventas, 3575);
     const cuentaBase = base.replace('/descartables', '/estadocuenta');

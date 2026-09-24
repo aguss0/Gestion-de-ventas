@@ -23,24 +23,12 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
     email:      cliente?.email      || "",
     tipo:       cliente?.tipo       || "",
     vendedorId: cliente?.vendedorId || "",
-    comisionMiguelPct:  cliente?.comisionMiguelPct  ?? 0,
-    comisionGerardoPct: cliente?.comisionGerardoPct ?? 0,
-    comisionTurkoPct:   cliente?.comisionTurkoPct   ?? 0,
   });
+  const [comisiones, setComisiones] = useState(() => Object.fromEntries(
+    (cliente?.comisionesVendedores || []).map(c => [String(c.vendedorId), c.porcentaje])
+  ));
 
   const set = campo => e => setForm(f => ({ ...f, [campo]: e.target.value }));
-  const setVendedor = e => {
-    const vendedorId = e.target.value;
-    const nombre = vendedores.find(v => String(v.id) === vendedorId)?.nombre?.toLowerCase() || "";
-    const sugeridos = nombre.includes("miguel")
-      ? { comisionMiguelPct: 10, comisionGerardoPct: 0, comisionTurkoPct: 0 }
-      : nombre.includes("gerardo")
-        ? { comisionMiguelPct: 6, comisionGerardoPct: 4, comisionTurkoPct: 0 }
-        : nombre.includes("turko")
-          ? { comisionMiguelPct: 6, comisionGerardoPct: 0, comisionTurkoPct: 4 }
-          : { comisionMiguelPct: 0, comisionGerardoPct: 0, comisionTurkoPct: 0 };
-    setForm(f => ({ ...f, vendedorId, ...(esEdicion ? {} : sugeridos) }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,9 +36,10 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
       const data = {
         ...form,
         vendedorId: form.vendedorId ? Number(form.vendedorId) : null,
-        comisionMiguelPct: Number(form.comisionMiguelPct),
-        comisionGerardoPct: Number(form.comisionGerardoPct),
-        comisionTurkoPct: Number(form.comisionTurkoPct),
+        comisiones: Object.entries(comisiones).map(([vendedorId, porcentaje]) => ({
+          vendedorId: Number(vendedorId),
+          porcentaje: Number(porcentaje || 0),
+        })),
       };
       if (esEdicion) {
         await clienteService.editar(cliente.id, data);
@@ -73,7 +62,7 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto" }}>
+      <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 620, maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <span style={{ fontSize: 15, fontWeight: 500 }}>{esEdicion ? "Editar cliente" : "Nuevo cliente"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--muted)" }}>×</button>
@@ -104,7 +93,7 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
             </div>
             <div>
               <label style={labelStyle}>Vendedor</label>
-              <select style={inputStyle} value={form.vendedorId} onChange={setVendedor}>
+              <select style={inputStyle} value={form.vendedorId} onChange={set("vendedorId")}>
                 <option value="">— Sin vendedor —</option>
                 {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
               </select>
@@ -112,11 +101,24 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
           </div>
           <div style={{ marginBottom: 12 }}>
             <div style={{ ...labelStyle, marginBottom: 7 }}>Comisiones sobre productos Laurens</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-              <div><label style={labelStyle}>Miguel (%)</label><input style={inputStyle} type="number" min="0" max="100" step="0.01" value={form.comisionMiguelPct} onChange={set("comisionMiguelPct")} required /></div>
-              <div><label style={labelStyle}>Gerardo (%)</label><input style={inputStyle} type="number" min="0" max="100" step="0.01" value={form.comisionGerardoPct} onChange={set("comisionGerardoPct")} required /></div>
-              <div><label style={labelStyle}>Turko (%)</label><input style={inputStyle} type="number" min="0" max="100" step="0.01" value={form.comisionTurkoPct} onChange={set("comisionTurkoPct")} required /></div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+              {vendedores.filter(v => v.activo || comisiones[String(v.id)] !== undefined).map(v => (
+                <div key={v.id}>
+                  <label style={labelStyle}>{v.nombre} (%)</label>
+                  <input
+                    style={inputStyle}
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={comisiones[String(v.id)] ?? 0}
+                    onChange={e => setComisiones(actual => ({ ...actual, [String(v.id)]: e.target.value }))}
+                    required
+                  />
+                </div>
+              ))}
             </div>
+            {!vendedores.length && <div style={{ fontSize: 12, color: "var(--muted)" }}>Primero creá un vendedor para configurar comisiones.</div>}
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <button type="button" onClick={onClose} style={{ padding: "8px 16px", border: "1px solid var(--border)", borderRadius: "var(--radius)", background: "#fff", fontSize: 13, cursor: "pointer" }}>Cancelar</button>
@@ -173,7 +175,11 @@ function FilaCliente({ cliente, onEditar, onEliminar }) {
             : <span style={{ color: "var(--muted)", fontSize: 12 }}>—</span>}
         </td>
         <td style={{ padding: "10px 14px", fontSize: 11, whiteSpace: "nowrap" }}>
-          M: {fmtPct(cliente.comisionMiguelPct)} · G: {fmtPct(cliente.comisionGerardoPct)} · T: {fmtPct(cliente.comisionTurkoPct)}
+          {cliente.comisionesVendedores?.length
+            ? [...cliente.comisionesVendedores]
+                .sort((a, b) => a.vendedor.nombre.localeCompare(b.vendedor.nombre))
+                .map(c => `${c.vendedor.nombre}: ${fmtPct(c.porcentaje)}`).join(" · ")
+            : "—"}
         </td>
         <td style={{ padding: "10px 14px", fontSize: 12, color: colorUltimaCompra }}>
           {stats?.ultimaCompra ? fmtFecha(stats.ultimaCompra) : "—"}

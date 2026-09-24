@@ -27,6 +27,7 @@ model Cliente {
 
   vendedor Vendedor? @relation(fields: [vendedorId], references: [id])
   pedidos  Pedido[]
+  comisionesVendedores ClienteComision[]
 
   @@map("clientes")
 }
@@ -105,6 +106,8 @@ model Vendedor {
   clientes   Cliente[]
   pedidos    Pedido[]
   comisiones Comision[]
+  clientesComision ClienteComision[]
+  comisionesPedidos PedidoComisionVendedor[]
 
   @@map("vendedores")
 }
@@ -130,6 +133,7 @@ model Pedido {
   detalle  DetallePedido[]
   pagos    Pago[]
   comision Comision?
+  comisionesVendedores PedidoComisionVendedor[]
 
   @@map("pedidos")
 }
@@ -182,6 +186,37 @@ model Comision {
   vendedor Vendedor @relation(fields: [vendedorId], references: [id])
 
   @@map("comisiones")
+}
+
+model ClienteComision {
+  id         Int   @id @default(autoincrement())
+  clienteId  Int   @map("cliente_id")
+  vendedorId Int   @map("vendedor_id")
+  porcentaje Float
+
+  cliente  Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  vendedor Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Restrict)
+
+  @@unique([clienteId, vendedorId])
+  @@map("cliente_comisiones")
+}
+
+model PedidoComisionVendedor {
+  id         Int      @id @default(autoincrement())
+  pedidoId   Int      @map("pedido_id")
+  vendedorId Int      @map("vendedor_id")
+  porcentaje Float
+  importe    Float    @default(0)
+  monto      Float    @default(0)
+  cobrado    Boolean  @default(false)
+  fechaCobro DateTime? @map("fecha_cobro")
+  creadoEn   DateTime @default(now()) @map("creado_en")
+
+  pedido   Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  vendedor Vendedor @relation(fields: [vendedorId], references: [id], onDelete: Restrict)
+
+  @@unique([pedidoId, vendedorId])
+  @@map("pedido_comisiones_vendedores")
 }
 
 model CompraStock {

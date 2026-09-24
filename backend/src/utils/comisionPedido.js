@@ -1,20 +1,37 @@
 // Las presentaciones vinculadas al catálogo de descartables nunca comisionan.
 async function actualizarComisionPedido(tx, pedidoId) {
-  const pedido = await tx.pedido.findUnique({ where: { id: pedidoId }, include: { cliente: true, vendedor: true, detalle: { include: { articulo: true } } } });
+  const pedido = await tx.pedido.findUnique({
+    where: { id: pedidoId },
+    include: {
+      detalle: { include: { articulo: true } },
+      comisionesVendedores: true,
+      cliente: { include: { comisionesVendedores: true } },
+    },
+  });
   const papas = pedido.detalle.filter(d => d.articulo.descartableId == null && d.articulo.dieteticaId == null && !d.articulo.manejaStock);
   const importe = papas.reduce((s, d) => s + d.subtotal, 0);
-  if (!pedido.activo || !pedido.vendedorId || importe <= 0) {
-    await tx.comision.deleteMany({ where: { pedidoId } });
-    return;
+  let configuraciones = pedido.comisionesVendedores;
+
+  // Compatibilidad para pedidos sin foto: tomar la configuración una única vez.
+  if (!configuraciones.length && pedido.cliente.comisionesVendedores.length) {
+    await tx.pedidoComisionVendedor.createMany({
+      data: pedido.cliente.comisionesVendedores.map(c => ({
+        pedidoId,
+        vendedorId: c.vendedorId,
+        porcentaje: c.porcentaje,
+      })),
+    });
+    configuraciones = pedido.cliente.comisionesVendedores;
   }
-  const pct = valor => Number.isFinite(Number(valor)) ? Number(valor) / 100 : 0;
-  const data = {
-    vendedorId: pedido.vendedorId,
-    importe,
-    comisionMiguel: importe * pct(pedido.comisionMiguelPct ?? pedido.cliente.comisionMiguelPct),
-    comisionGerardo: importe * pct(pedido.comisionGerardoPct ?? pedido.cliente.comisionGerardoPct),
-    comisionTurko: importe * pct(pedido.comisionTurkoPct ?? pedido.cliente.comisionTurkoPct),
-  };
-  await tx.comision.upsert({ where: { pedidoId }, create: { pedidoId, ...data }, update: data });
+
+  const base = pedido.activo ? importe : 0;
+  for (const configuracion of configuraciones) {
+    const monto = base * Number(configuracion.porcentaje) / 100;
+    await tx.pedidoComisionVendedor.upsert({
+      where: { pedidoId_vendedorId: { pedidoId, vendedorId: configuracion.vendedorId } },
+      create: { pedidoId, vendedorId: configuracion.vendedorId, porcentaje: configuracion.porcentaje, importe: base, monto },
+      update: { importe: base, monto },
+    });
+  }
 }
 module.exports = { actualizarComisionPedido };

@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Layout } from "../../components/Layout";
 import { comisionService } from "../../services/pedidoService";
@@ -13,329 +13,152 @@ function fmtFecha(f) {
   return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
 }
 
-const TABS = ["General", "Miguel", "Gerardo", "Turko"];
-
 export function Comisiones() {
   const queryClient = useQueryClient();
-  const [tab, setTab]                                 = useState("General");
-  const [desde, setDesde]                             = useState("");
-  const [hasta, setHasta]                             = useState("");
-  const [soloSeleccionados, setSoloSeleccionados]     = useState(false);
-  const [seleccionados, setSeleccionados]             = useState([]);
+  const [tab, setTab] = useState("general");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
+  const [soloSeleccionados, setSoloSeleccionados] = useState(false);
+  const [seleccionados, setSeleccionados] = useState([]);
   const [soloConStock, setSoloConStock] = useState(false);
+
   const { data: detalle = [], isLoading } = useQuery({
     queryKey: ["comisiones", desde, hasta],
-    queryFn:  () => comisionService.listar({ desde, hasta }),
+    queryFn: () => comisionService.listar({ desde, hasta }),
   });
 
+  const vendedores = useMemo(() => {
+    const unicos = new Map(detalle.map(c => [c.vendedorId, c.vendedor]));
+    return [...unicos.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [detalle]);
+
   const { mutate: toggleCobrado } = useMutation({
-    mutationFn: ({ id, cobrado }) =>
-      api.patch(`/comisiones/${id}/cobrado`, { cobrado }).then(r => r.data),
+    mutationFn: ({ id, cobrado }) => api.patch(`/comisiones/${id}/cobrado`, { cobrado }).then(r => r.data),
     onSuccess: () => {
       toast.success("Estado actualizado");
-      queryClient.invalidateQueries(["comisiones"]);
+      queryClient.invalidateQueries({ queryKey: ["comisiones"] });
     },
     onError: () => toast.error("Error al actualizar"),
   });
 
   const { mutate: limpiarHuerfanas, isPending: limpiando } = useMutation({
     mutationFn: comisionService.limpiarHuerfanas,
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(data.mensaje);
       setSeleccionados([]);
-      queryClient.invalidateQueries(["comisiones"]);
+      queryClient.invalidateQueries({ queryKey: ["comisiones"] });
     },
     onError: () => toast.error("No se pudieron limpiar las comisiones antiguas"),
   });
 
-  // Filtrar por tab y seleccionados
-  // Filtrar por tab y seleccionados
-const detalleFiltrado = useMemo(() => {
-  return detalle.filter(c => {
+  const detalleFiltrado = useMemo(() => detalle.filter(c => {
+    if (tab !== "general" && c.vendedorId !== Number(tab)) return false;
     if (soloConStock && !c.pedido?.detalle?.some(d => d.articulo?.manejaStock)) return false;
-    if (soloSeleccionados && seleccionados.length > 0) {
-      if (!seleccionados.includes(c.id)) return false;
-    }
-    if (tab === "Miguel"  && c.comisionMiguel  <= 0) return false;
-    if (tab === "Gerardo" && c.comisionGerardo <= 0) return false;
-    if (tab === "Turko"   && c.comisionTurko   <= 0) return false;
+    if (soloSeleccionados && seleccionados.length && !seleccionados.includes(c.id)) return false;
     return true;
-  });
-}, [detalle, soloSeleccionados, seleccionados, tab, soloConStock]);
+  }), [detalle, tab, soloConStock, soloSeleccionados, seleccionados]);
 
-const { datosordenados: comisionesOrdenadas, orden, toggleOrden } = useOrden(detalleFiltrado, { campo: "pedido.nroOrden", dir: "desc" });
+  const { datosordenados: comisionesOrdenadas, orden, toggleOrden } = useOrden(detalleFiltrado, { campo: "pedido.nroOrden", dir: "desc" });
 
-  // Calcular resumen desde los datos filtrados (o seleccionados)
-  const baseParaResumen = useMemo(() => {
-    if (soloSeleccionados && seleccionados.length > 0) {
-      return detalle.filter(c => seleccionados.includes(c.id));
-    }
-    return detalle;
-  }, [detalle, soloSeleccionados, seleccionados]);
+  const baseParaResumen = useMemo(() =>
+    soloSeleccionados && seleccionados.length
+      ? detalle.filter(c => seleccionados.includes(c.id))
+      : detalle,
+  [detalle, soloSeleccionados, seleccionados]);
 
   const resumen = useMemo(() => {
-  const map = {
-    Miguel:  { vendedor: "Miguel",  total: 0, cobrado: 0, pendiente: 0 },
-    Gerardo: { vendedor: "Gerardo", total: 0, cobrado: 0, pendiente: 0 },
-    Turko:   { vendedor: "Turko",   total: 0, cobrado: 0, pendiente: 0 },
-  };
-
-  for (const c of baseParaResumen) {
-    if (c.comisionMiguel > 0) {
-      map.Miguel.total += c.comisionMiguel;
-      if (c.cobrado) map.Miguel.cobrado   += c.comisionMiguel;
-      else           map.Miguel.pendiente += c.comisionMiguel;
+    const mapa = new Map();
+    for (const c of baseParaResumen) {
+      if (!mapa.has(c.vendedorId)) mapa.set(c.vendedorId, { vendedorId: c.vendedorId, vendedor: c.vendedor.nombre, total: 0, cobrado: 0, pendiente: 0 });
+      const fila = mapa.get(c.vendedorId);
+      fila.total += c.monto;
+      if (c.cobrado) fila.cobrado += c.monto;
+      else fila.pendiente += c.monto;
     }
-    if (c.comisionGerardo > 0) {
-      map.Gerardo.total += c.comisionGerardo;
-      if (c.cobrado) map.Gerardo.cobrado   += c.comisionGerardo;
-      else           map.Gerardo.pendiente += c.comisionGerardo;
-    }
-    if (c.comisionTurko > 0) {
-      map.Turko.total += c.comisionTurko;
-      if (c.cobrado) map.Turko.cobrado   += c.comisionTurko;
-      else           map.Turko.pendiente += c.comisionTurko;
-    }
-  }
+    return [...mapa.values()].sort((a, b) => a.vendedor.localeCompare(b.vendedor));
+  }, [baseParaResumen]);
 
-  return Object.values(map).filter(v => v.total > 0);
-}, [baseParaResumen]);
+  const toggleSeleccion = id => setSeleccionados(actual => actual.includes(id) ? actual.filter(x => x !== id) : [...actual, id]);
+  const toggleTodos = () => setSeleccionados(actual =>
+    detalleFiltrado.length && detalleFiltrado.every(c => actual.includes(c.id))
+      ? actual.filter(id => !detalleFiltrado.some(c => c.id === id))
+      : [...new Set([...actual, ...detalleFiltrado.map(c => c.id)])]
+  );
+  const limpiarFiltros = () => { setDesde(""); setHasta(""); setSoloSeleccionados(false); setSeleccionados([]); setTab("general"); };
+  const hayFiltros = desde || hasta || soloSeleccionados || tab !== "general";
+  const inputStyle = { padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, fontFamily: "inherit", background: "#fff" };
 
-  const toggleSeleccion = (id) => {
-    setSeleccionados(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  const toggleTodos = () => {
-    if (seleccionados.length === detalleFiltrado.length) setSeleccionados([]);
-    else setSeleccionados(detalleFiltrado.map(c => c.id));
-  };
-
-  const limpiarFiltros = () => {
-    setDesde(""); setHasta("");
-    setSoloSeleccionados(false);
-    setSeleccionados([]);
-  };
-
-  const hayFiltros = desde || hasta || soloSeleccionados;
-
-  const inputStyle = {
-    padding: "8px 10px", border: "1px solid var(--border)",
-    borderRadius: "var(--radius)", fontSize: 13,
-    fontFamily: "inherit", background: "#fff",
-  };
-
-  const columnas = tab === "General"
-  ? ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Vendedor", "Importe", "Com. Miguel", "Com. Gerardo", "Com. Turko", "Fecha cobro"]
-  : tab === "Miguel"
-  ? ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Miguel", "Fecha cobro"]
-  : tab === "Gerardo"
-  ? ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Gerardo", "Fecha cobro"]
-  : ["Sel.", "Cobrado", "OC", "Fecha pedido", "Cliente", "Importe", "Com. Turko", "Fecha cobro"];
+  const columnas = [
+    ["Sel.", null], ["Cobrado", null], ["OC", "pedido.nroOrden"], ["Fecha pedido", "pedido.fecha"],
+    ["Cliente", "pedido.cliente.nombre"], ["Vendedor", "vendedor.nombre"], ["Base Laurens", null],
+    ["Porcentaje", null], ["Comisión", null], ["Fecha cobro", "fechaCobro"],
+  ];
 
   return (
-    <Layout
-      titulo="Comisiones"
-      acciones={
-        <button
-          onClick={() => {
-            if (window.confirm("¿Eliminar las comisiones cuyos pedidos ya fueron eliminados?")) limpiarHuerfanas();
-          }}
-          disabled={limpiando}
-          style={{ padding: "7px 14px", border: "1px solid var(--danger)", borderRadius: 6, background: "#fff", color: "var(--danger)", fontSize: 13, cursor: "pointer" }}
-        >
-          {limpiando ? "Limpiando…" : "Limpiar comisiones antiguas"}
-        </button>
-      }
-    >
-
-      {/* Cards resumen — se actualizan con filtros y selección */}
+    <Layout titulo="Comisiones" acciones={
+      <button onClick={() => window.confirm("¿Eliminar las comisiones cuyos pedidos ya fueron eliminados?") && limpiarHuerfanas()} disabled={limpiando}
+        style={{ padding: "7px 14px", border: "1px solid var(--danger)", borderRadius: 6, background: "#fff", color: "var(--danger)", fontSize: 13, cursor: "pointer" }}>
+        {limpiando ? "Limpiando…" : "Limpiar comisiones antiguas"}
+      </button>
+    }>
       {resumen.length > 0 && (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-        {resumen.map(v => (
-          <div key={v.vendedor} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px" }}>
-            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 10 }}>🤝 {v.vendedor}</div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: "var(--primary)", marginBottom: 8 }}>
-              {fmt(v.total)}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+          {resumen.map(v => (
+            <div key={v.vendedorId} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 10 }}>🤝 {v.vendedor}</div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: "var(--primary)", marginBottom: 8 }}>{fmt(v.total)}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}><span style={{ color: "var(--success)" }}>✅ Cobrado:</span><strong style={{ color: "var(--success)" }}>{fmt(v.cobrado)}</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}><span style={{ color: "var(--danger)" }}>⏳ Pendiente:</span><strong style={{ color: "var(--danger)" }}>{fmt(v.pendiente)}</strong></div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-              <span style={{ color: "var(--success)" }}>✅ Cobrado:</span>
-              <span style={{ fontWeight: 500, color: "var(--success)" }}>{fmt(v.cobrado)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-              <span style={{ color: "var(--danger)" }}>⏳ Pendiente:</span>
-              <span style={{ fontWeight: 500, color: "var(--danger)" }}>{fmt(v.pendiente)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  {/* Total general */}
-    {resumen.length > 0 && (
-      <div style={{ background: "var(--primary)", borderRadius: 10, padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ color: "rgba(255,255,255,.8)", fontSize: 13, fontWeight: 500 }}>Total comisiones</div>
-        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginBottom: 2 }}>Total</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>
-              {fmt(resumen.reduce((s, v) => s + v.total, 0))}
-            </div>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginBottom: 2 }}>✅ Cobrado</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#86efac" }}>
-              {fmt(resumen.reduce((s, v) => s + v.cobrado, 0))}
-            </div>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginBottom: 2 }}>⏳ Pendiente</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fca5a5" }}>
-              {fmt(resumen.reduce((s, v) => s + v.pendiente, 0))}
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
-    )}
+      )}
 
-      {/* Filtros */}
+      {resumen.length > 0 && (
+        <div style={{ background: "var(--primary)", color: "#fff", borderRadius: 10, padding: "14px 20px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <strong>Total comisiones</strong>
+          <strong style={{ fontSize: 22 }}>{fmt(resumen.reduce((s, v) => s + v.total, 0))}</strong>
+        </div>
+      )}
+
       <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--muted)" }}>Desde</label>
-          <input type="date" style={inputStyle} value={desde} onChange={e => { setDesde(e.target.value); setSeleccionados([]); }} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--muted)" }}>Hasta</label>
-          <input type="date" style={inputStyle} value={hasta} onChange={e => { setHasta(e.target.value); setSeleccionados([]); }} />
-        </div>
-        {seleccionados.length > 0 && (
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={soloSeleccionados}
-              onChange={e => setSoloSeleccionados(e.target.checked)}
-            />
-            Ver solo seleccionados ({seleccionados.length})
-          </label>
-        )}
-        {hayFiltros && (
-          <button onClick={limpiarFiltros} style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius)", background: "var(--bg)", fontSize: 12, cursor: "pointer", color: "var(--muted)" }}>
-            Limpiar filtros
-          </button>
-        )}
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>
-          {detalleFiltrado.length} comisión{detalleFiltrado.length !== 1 ? "es" : ""}
-        </span>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={soloConStock}
-          onChange={e => setSoloConStock(e.target.checked)}
-        />
-        Solo pedidos con productos de stock
-      </label>
-      </div>
-      
-      {/* Indicadores */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-        <div style={{ background: "#fef9c3", border: "1px solid #d97706", borderRadius: 8, padding: "8px 14px", fontSize: 13 }}>
-          ⏳ <strong>{detalleFiltrado.filter(c => !c.cobrado).length}</strong> pendiente{detalleFiltrado.filter(c => !c.cobrado).length !== 1 ? "s" : ""}
-        </div>
-        <div style={{ background: "#f0fdf4", border: "1px solid #16a34a", borderRadius: 8, padding: "8px 14px", fontSize: 13 }}>
-          ✅ <strong>{detalleFiltrado.filter(c => c.cobrado).length}</strong> cobrada{detalleFiltrado.filter(c => c.cobrado).length !== 1 ? "s" : ""}
-        </div>
+        <label style={{ fontSize: 12, color: "var(--muted)" }}>Desde <input type="date" style={inputStyle} value={desde} onChange={e => { setDesde(e.target.value); setSeleccionados([]); }} /></label>
+        <label style={{ fontSize: 12, color: "var(--muted)" }}>Hasta <input type="date" style={inputStyle} value={hasta} onChange={e => { setHasta(e.target.value); setSeleccionados([]); }} /></label>
+        {seleccionados.length > 0 && <label style={{ fontSize: 13 }}><input type="checkbox" checked={soloSeleccionados} onChange={e => setSoloSeleccionados(e.target.checked)} /> Ver solo seleccionados ({seleccionados.length})</label>}
+        {hayFiltros && <button onClick={limpiarFiltros} style={inputStyle}>Limpiar filtros</button>}
+        <label style={{ fontSize: 13 }}><input type="checkbox" checked={soloConStock} onChange={e => setSoloConStock(e.target.checked)} /> Solo pedidos con productos de stock</label>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>{detalleFiltrado.length} comisiones</span>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "2px solid var(--border)", marginBottom: 0 }}>
-        {TABS.map(t => (
-          <div key={t} onClick={() => setTab(t)} style={{
-            padding: "8px 18px", fontSize: 13, cursor: "pointer",
-            color: tab === t ? "var(--primary)" : "var(--muted)",
-            borderBottom: tab === t ? "2px solid var(--primary)" : "2px solid transparent",
-            marginBottom: -2, fontWeight: tab === t ? 500 : 400,
-            transition: "all .15s",
-          }}>
-            {t}
-          </div>
-        ))}
+      <div style={{ display: "flex", borderBottom: "2px solid var(--border)", overflowX: "auto" }}>
+        {[{ id: "general", nombre: "General" }, ...vendedores].map(v => {
+          const id = String(v.id);
+          return <button key={id} onClick={() => setTab(id)} style={{ padding: "8px 18px", border: "none", borderBottom: tab === id ? "2px solid var(--primary)" : "2px solid transparent", background: "transparent", color: tab === id ? "var(--primary)" : "var(--muted)", fontWeight: tab === id ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap", marginBottom: -2 }}>{v.nombre}</button>;
+        })}
       </div>
 
-      {/* Tabla */}
-      <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: "0 0 10px 10px", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr>
-              {columnas.map(h => {
-                const campoMap = {
-                  "OC":           "pedido.nroOrden",
-                  "Fecha pedido": "pedido.fecha",
-                  "Cliente":      "pedido.cliente.nombre",
-                  "Fecha cobro":  "fechaCobro",
-                };
-                const campo = campoMap[h];
-                if (campo) {
-                  const activo = orden.campo === campo;
-                  return (
-                    <th key={h}
-                      onClick={() => toggleOrden(campo)}
-                      style={{ textAlign: "left", padding: "8px 14px", fontSize: 11, color: activo ? "var(--primary)" : "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500, textTransform: "uppercase", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
-                    >
-                      {h} {activo ? (orden.dir === "asc" ? "↑" : "↓") : "↕"}
-                    </th>
-                  );
-                }
-                return (
-                  <th key={h} style={{ textAlign: "left", padding: "8px 14px", fontSize: 11, color: "var(--muted)", borderBottom: "1px solid var(--border)", fontWeight: 500, textTransform: "uppercase" }}>
-                    {h === "Sel." ? (
-                      <input
-                        type="checkbox"
-                        checked={seleccionados.length === detalleFiltrado.length && detalleFiltrado.length > 0}
-                        onChange={toggleTodos}
-                        style={{ cursor: "pointer" }}
-                      />
-                    ) : h}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
+      <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: "0 0 10px 10px", overflowX: "auto" }}>
+        <table style={{ width: "100%", minWidth: 1050, borderCollapse: "collapse", fontSize: 13 }}>
+          <thead><tr>{columnas.map(([label, campo]) => (
+            <th key={label} onClick={campo ? () => toggleOrden(campo) : undefined} style={{ textAlign: "left", padding: "8px 14px", fontSize: 11, color: orden.campo === campo ? "var(--primary)" : "var(--muted)", borderBottom: "1px solid var(--border)", textTransform: "uppercase", cursor: campo ? "pointer" : "default", whiteSpace: "nowrap" }}>
+              {label === "Sel." ? <input type="checkbox" checked={detalleFiltrado.length > 0 && detalleFiltrado.every(c => seleccionados.includes(c.id))} onChange={toggleTodos} /> : <>{label}{campo ? ` ${orden.campo === campo ? (orden.dir === "asc" ? "↑" : "↓") : "↕"}` : ""}</>}
+            </th>
+          ))}</tr></thead>
           <tbody>
             {isLoading && <tr><td colSpan={columnas.length} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>Cargando…</td></tr>}
-            {!isLoading && detalleFiltrado.length === 0 && <tr><td colSpan={columnas.length} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>Sin comisiones para los filtros seleccionados</td></tr>}
+            {!isLoading && !detalleFiltrado.length && <tr><td colSpan={columnas.length} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>Sin comisiones para los filtros seleccionados</td></tr>}
             {comisionesOrdenadas.map(c => (
-              <tr key={c.id}
-                style={{ borderBottom: "1px solid var(--border)", background: c.cobrado ? "#f0fdf4" : seleccionados.includes(c.id) ? "#eff6ff" : "#fff" }}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--bg)"}
-                onMouseLeave={e => e.currentTarget.style.background = c.cobrado ? "#f0fdf4" : seleccionados.includes(c.id) ? "#eff6ff" : "#fff"}
-              >
-                <td style={{ padding: "9px 14px" }}>
-                  <input type="checkbox" checked={seleccionados.includes(c.id)} onChange={() => toggleSeleccion(c.id)} style={{ cursor: "pointer" }} />
-                </td>
-                <td style={{ padding: "9px 14px" }}>
-                  <input
-                    type="checkbox"
-                    checked={c.cobrado}
-                    onChange={() => toggleCobrado({ id: c.id, cobrado: !c.cobrado })}
-                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--success)" }}
-                  />
-                </td>
-                <td style={{ padding: "9px 14px", fontWeight: 500 }}>#{c.pedido?.nroOrden}</td>
-                <td style={{ padding: "9px 14px", color: "var(--muted)", fontSize: 12 }}>
-                  {c.pedido?.fecha ? (() => { 
-                    const d = new Date(c.pedido.fecha); 
-                    return `${String(d.getUTCDate()).padStart(2,"0")}/${String(d.getUTCMonth()+1).padStart(2,"0")}/${d.getUTCFullYear()}`; 
-                  })() : "—"}
-                </td>
-                <td style={{ padding: "9px 14px" }}>{c.pedido?.cliente?.nombre}</td>
-                {tab === "General" && <td style={{ padding: "9px 14px" }}>{c.vendedor?.nombre}</td>}
-                <td style={{ padding: "9px 14px", fontWeight: 500 }}>{fmt(c.importe)}</td>
-                {(tab === "General" || tab === "Miguel")  && <td style={{ padding: "9px 14px" }}>{c.comisionMiguel  > 0 ? fmt(c.comisionMiguel)  : "—"}</td>}
-                {(tab === "General" || tab === "Gerardo") && <td style={{ padding: "9px 14px" }}>{c.comisionGerardo > 0 ? fmt(c.comisionGerardo) : "—"}</td>}
-                {(tab === "General" || tab === "Turko")   && <td style={{ padding: "9px 14px" }}>{c.comisionTurko   > 0 ? fmt(c.comisionTurko)   : "—"}</td>}
-                <td style={{ padding: "9px 14px", color: "var(--muted)", fontSize: 12 }}>
-                  {c.fechaCobro ? new Date(c.fechaCobro).toLocaleDateString("es-AR") : "—"}
-                </td>
+              <tr key={c.id} style={{ borderBottom: "1px solid var(--border)", background: c.cobrado ? "#f0fdf4" : seleccionados.includes(c.id) ? "#eff6ff" : "#fff" }}>
+                <td style={{ padding: "9px 14px" }}><input type="checkbox" checked={seleccionados.includes(c.id)} onChange={() => toggleSeleccion(c.id)} /></td>
+                <td style={{ padding: "9px 14px" }}><input type="checkbox" checked={c.cobrado} onChange={() => toggleCobrado({ id: c.id, cobrado: !c.cobrado })} /></td>
+                <td style={{ padding: "9px 14px", fontWeight: 500 }}>#{c.pedido.nroOrden}</td>
+                <td style={{ padding: "9px 14px", color: "var(--muted)" }}>{fmtFecha(c.pedido.fecha)}</td>
+                <td style={{ padding: "9px 14px" }}>{c.pedido.cliente.nombre}</td>
+                <td style={{ padding: "9px 14px" }}>{c.vendedor.nombre}</td>
+                <td style={{ padding: "9px 14px" }}>{fmt(c.importe)}</td>
+                <td style={{ padding: "9px 14px" }}>{Number(c.porcentaje).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%</td>
+                <td style={{ padding: "9px 14px", fontWeight: 600, color: "var(--primary)" }}>{fmt(c.monto)}</td>
+                <td style={{ padding: "9px 14px", color: "var(--muted)" }}>{fmtFecha(c.fechaCobro)}</td>
               </tr>
             ))}
           </tbody>

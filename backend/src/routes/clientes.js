@@ -9,53 +9,80 @@ function normalizarComisionPct(valor) {
   return porcentaje;
 }
 
-function comisionesDesde(body, parciales = false) {
-  const campos = ["comisionMiguelPct", "comisionGerardoPct", "comisionTurkoPct"];
-  return Object.fromEntries(campos.map(campo => [
-    campo,
-    parciales && body[campo] === undefined ? undefined : normalizarComisionPct(body[campo] ?? 0),
-  ]));
+function normalizarComisiones(comisiones) {
+  if (!Array.isArray(comisiones)) return [];
+  const vendedores = new Set();
+  return comisiones.map(item => {
+    const vendedorId = Number(item.vendedorId);
+    if (!Number.isInteger(vendedorId) || vendedorId < 1) {
+      throw { status: 400, message: "Hay un vendedor inválido en las comisiones" };
+    }
+    if (vendedores.has(vendedorId)) {
+      throw { status: 400, message: "No se puede repetir un vendedor en las comisiones" };
+    }
+    vendedores.add(vendedorId);
+    return { vendedorId, porcentaje: normalizarComisionPct(item.porcentaje) };
+  }).filter(item => item.porcentaje > 0);
 }
 
 router.get("/", async (_req, res) => {
   const data = await prisma.cliente.findMany({
-    include: { vendedor: { select: { id: true, nombre: true } } },
+    include: {
+      vendedor: { select: { id: true, nombre: true } },
+      comisionesVendedores: { include: { vendedor: { select: { id: true, nombre: true, activo: true } } } },
+    },
     orderBy: { nombre: "asc" },
   });
   res.json(data);
 });
 
 router.post("/", async (req, res) => {
-  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, comisionPct = 4 } = req.body;
+  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId } = req.body;
   if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
-  const data = await prisma.cliente.create({
-    data: {
-      nombre,
-      cuit:       cuit       || null,
-      email:      email      || null,
-      telefono:   telefono   || null,
-      direccion:  direccion  || null,
-      barrio:     barrio     || null,
-      tipo:       tipo       || null,
-      vendedorId: vendedorId ? Number(vendedorId) : null,
-      comisionPct: normalizarComisionPct(comisionPct),
-      ...comisionesDesde(req.body),
-    },
+  const comisiones = normalizarComisiones(req.body.comisiones);
+  const data = await prisma.$transaction(async tx => {
+    const cliente = await tx.cliente.create({
+      data: {
+        nombre,
+        cuit:       cuit       || null,
+        email:      email      || null,
+        telefono:   telefono   || null,
+        direccion:  direccion  || null,
+        barrio:     barrio     || null,
+        tipo:       tipo       || null,
+        vendedorId: vendedorId ? Number(vendedorId) : null,
+      },
+    });
+    if (comisiones.length) {
+      await tx.clienteComision.createMany({ data: comisiones.map(c => ({ clienteId: cliente.id, ...c })) });
+    }
+    return tx.cliente.findUnique({
+      where: { id: cliente.id },
+      include: { vendedor: true, comisionesVendedores: { include: { vendedor: true } } },
+    });
   });
   res.status(201).json(data);
 });
 
 router.patch("/:id", async (req, res) => {
-  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, comisionPct, activo } = req.body;
-  const data = await prisma.cliente.update({
-    where: { id: Number(req.params.id) },
-    data:  {
-      nombre, cuit, email, telefono, direccion, barrio, tipo,
-      vendedorId: vendedorId ? Number(vendedorId) : null,
-      comisionPct: comisionPct === undefined ? undefined : normalizarComisionPct(comisionPct),
-      ...comisionesDesde(req.body, true),
-      activo,
-    },
+  const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, activo } = req.body;
+  const clienteId = Number(req.params.id);
+  const comisiones = req.body.comisiones === undefined ? null : normalizarComisiones(req.body.comisiones);
+  const data = await prisma.$transaction(async tx => {
+    await tx.cliente.update({
+      where: { id: clienteId },
+      data:  { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId: vendedorId ? Number(vendedorId) : null, activo },
+    });
+    if (comisiones !== null) {
+      await tx.clienteComision.deleteMany({ where: { clienteId } });
+      if (comisiones.length) {
+        await tx.clienteComision.createMany({ data: comisiones.map(c => ({ clienteId, ...c })) });
+      }
+    }
+    return tx.cliente.findUnique({
+      where: { id: clienteId },
+      include: { vendedor: true, comisionesVendedores: { include: { vendedor: true } } },
+    });
   });
   res.json(data);
 });

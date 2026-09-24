@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { actualizarComisionPedido } = require("../src/utils/comisionPedido");
 const prisma = new PrismaClient();
 
 async function main() {
@@ -21,6 +22,27 @@ async function main() {
   const dietetica         = await prisma.cliente.upsert({ where: { email: "dieteticaNvaCba@mail.com"   }, update: {}, create: { nombre: "Dietetica Nva Cba",               email: "dieteticaNvaCba@mail.com",   vendedorId: miguel.id  } });
   const gda               = await prisma.cliente.upsert({ where: { email: "gda@mail.com"               }, update: {}, create: { nombre: "GDA",                            email: "gda@mail.com",               vendedorId: gerardo.id } });
   const sanGuillermo      = await prisma.cliente.upsert({ where: { email: "sanGuillermo@mail.com"      }, update: {}, create: { nombre: "Distribuidora San Guillermo",     email: "sanGuillermo@mail.com",      vendedorId: turko.id   } });
+
+  const configuraciones = [
+    [laQueseria, [[miguel, 6], [turko, 4]]],
+    [mariel, [[miguel, 10]]],
+    [verdeLimon, [[miguel, 10]]],
+    [masi, [[miguel, 6], [turko, 4]]],
+    [casonas, [[miguel, 6], [turko, 4]]],
+    [feli, [[miguel, 6], [gerardo, 4]]],
+    [dietetica, [[miguel, 10]]],
+    [gda, [[miguel, 6], [gerardo, 4]]],
+    [sanGuillermo, [[miguel, 6], [turko, 4]]],
+  ];
+  for (const [cliente, comisiones] of configuraciones) {
+    for (const [vendedor, porcentaje] of comisiones) {
+      await prisma.clienteComision.upsert({
+        where: { clienteId_vendedorId: { clienteId: cliente.id, vendedorId: vendedor.id } },
+        update: { porcentaje },
+        create: { clienteId: cliente.id, vendedorId: vendedor.id, porcentaje },
+      });
+    }
+  }
 
   console.log("✅ Clientes creados");
 
@@ -279,6 +301,7 @@ async function main() {
     if (!existeDetalle) {
       await prisma.detallePedido.createMany({ data: itemsConArticulo.map(i => ({ ...i, pedidoId: pedido.id })) });
     }
+    await actualizarComisionPedido(prisma, pedido.id);
   }
 
   console.log("✅ Pedidos creados");

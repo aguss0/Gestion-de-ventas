@@ -22,7 +22,10 @@ router.get("/", async (req, res) => {
     include: {
       cliente:  { select: { nombre: true } },
       vendedor: { select: { nombre: true } },
-      pagos:    true,
+      pagos: {
+        orderBy: { fecha: "asc" },
+        select: { id: true, fecha: true, metodo: true, monto: true, observaciones: true },
+      },
       detalle: detalleCategorias,
     },
     orderBy: { nroOrden: "asc" },
@@ -40,6 +43,7 @@ router.get("/", async (req, res) => {
     pagado:      p.totalPagado,
     saldo:       p.saldo,
     observaciones: p.observaciones,
+    pagos:       p.pagos,
   }));
 
   res.json(data);
