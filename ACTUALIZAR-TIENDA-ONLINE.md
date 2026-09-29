@@ -36,3 +36,9 @@ No aplicar estas instrucciones a una base o instalación desconocida sin revisar
 En Tienda Online, cada producto permite cargar un Precio en tienda opcional. Si está vacío, se publica el precio vigente del sistema; si está cargado, ese importe se mantiene para la tienda aunque cambie el precio local. Borrar el importe vuelve a usar el precio local. Guardar y luego sincronizar para publicarlo.
 
 Esto no cambia listas de precios, pedidos ni ventas locales. La actualización agrega únicamente la columna opcional precio_online mediante la migración 20260918000000_precio_online. Conservarla junto con las migraciones anteriores en el ZIP.
+
+## Imágenes guardadas en la PC
+
+La pantalla Tienda Online permite elegir archivos JPG, PNG o WebP de hasta 2 MB. Se guardan en backend/data/tienda-online-imagenes, carpeta que debe conservarse en las copias de seguridad y nunca subirse a GitHub. Al sincronizar, se copia cada imagen seleccionada al almacenamiento R2 privado de Cloudflare y la tienda la sirve mediante su API pública. La PC puede apagarse después de sincronizar.
+
+La actualización requiere la migración aditiva 20260929000000_imagenes_locales. No reemplaza la base real. Para instalar desde el ZIP, conservar backend/data junto con dev.db y .env.

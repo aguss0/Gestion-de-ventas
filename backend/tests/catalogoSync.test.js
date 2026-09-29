@@ -76,3 +76,10 @@ test('Precio de tienda independiente, retorno al precio local y cero explícito'
   assert.deepEqual(publicacionOnline({precioOnline:null}),{precioOnline:null});
   for(const precioOnline of [-1,Infinity,NaN,'50',1.001,1000000001]) assert.throws(()=>publicacionOnline({precioOnline}));
 });
+
+test('Sube la imagen local antes del catálogo y publica su dirección de Cloudflare', async()=>{
+ const llamadas=[];const dir=await fs.mkdtemp(path.join(os.tmpdir(),'catalogo-image-'));const prisma={articulo:{findMany:async()=>[{...articulo,imagenLocal:'1-hash.png',imagenUrl:null}],count:async()=>1}};
+ const fetchImpl=async(url,options)=>{llamadas.push({url:String(url),options});if(options.method==='PUT')return {ok:true,status:200};const body=JSON.parse(options.body);assert.equal(body.productos[0].imagenUrl,'https://catalogo.example.com/api/imagenes/1');return {ok:true,json:async()=>({ok:true,sincronizacionId:body.sincronizacionId,productosProcesados:1})};};
+ const servicio=crearCatalogoSyncService({prisma,fetchImpl,env:{CATALOGO_API_URL:'https://catalogo.example.com',CATALOGO_SYNC_TOKEN:'x'.repeat(40)},imagenesImpl:{leer:async()=>({buffer:Buffer.from([1,2,3]),mimetype:'image/png',hash:'a'.repeat(64)})},estadoPath:path.join(dir,'estado.json')});
+ try{assert.equal((await servicio.sincronizar()).exitoso,true);assert.equal(llamadas[0].url,'https://catalogo.example.com/api/catalogo/imagenes/1');assert.equal(llamadas[0].options.headers['X-Content-Sha256'],'a'.repeat(64));assert.equal(llamadas[1].url,'https://catalogo.example.com/api/catalogo/sincronizar');}finally{await fs.rm(dir,{recursive:true,force:true});}
+});

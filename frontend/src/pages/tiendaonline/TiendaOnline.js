@@ -8,18 +8,23 @@ const dinero = n => Number(n).toLocaleString('es-AR', { style: 'currency', curre
 const fecha = n => n ? new Date(n).toLocaleString('es-AR') : 'Todavía no se sincronizó';
 const control = { padding: 10, border: '1px solid var(--border)', borderRadius: 6, font: 'inherit' };
 
-function DatosPublicos({ producto, guardar, ocupado }) {
+function DatosPublicos({ producto, guardar, guardarImagen, eliminarImagen, ocupado }) {
   const [categoriaOnline, setCategoria] = useState(producto.categoriaOnline || '');
   const [precioOnline, setPrecio] = useState(producto.precioOnline == null ? '' : String(producto.precioOnline));
-  const [imagenUrl, setImagen] = useState(producto.imagenUrl || '');
-  return <form onSubmit={e => { e.preventDefault(); guardar({ id: producto.id, data: { categoriaOnline, imagenUrl, precioOnline: precioOnline === '' ? null : Number(precioOnline) } }); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+  const [archivo, setArchivo] = useState(null);
+  return <form onSubmit={e => { e.preventDefault(); guardar({ id: producto.id, data: { categoriaOnline, precioOnline: precioOnline === '' ? null : Number(precioOnline) } }); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
     <label style={{ display: 'grid', gap: 4 }}>Precio en tienda (opcional)
       <input aria-label={`Precio en tienda de ${producto.nombre}`} style={control} type="number" min="0" max="1000000000" step="0.01" placeholder={String(producto.precio)} value={precioOnline} onChange={e => setPrecio(e.target.value)} />
       <small>Vacío: usar el precio del sistema. No cambia los pedidos locales.</small>
     </label>
     <input aria-label={`Categoría de ${producto.nombre}`} style={control} maxLength={120} placeholder={producto.categoria || 'Categoría opcional'} value={categoriaOnline} onChange={e => setCategoria(e.target.value)} />
-    <input aria-label={`Imagen de ${producto.nombre}`} style={{ ...control, flex: 1, minWidth: 180 }} type="url" maxLength={2048} placeholder="Imagen: https://… (opcional)" value={imagenUrl} onChange={e => setImagen(e.target.value)} />
-    <button style={control} disabled={ocupado}>Guardar datos públicos</button>
+    <button style={control} disabled={ocupado}>Guardar precio y categoría</button>
+    <div style={{ flexBasis: '100%', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      {producto.imagenLocal && <img src={`/api/tienda-online/productos/${producto.id}/imagen?v=${encodeURIComponent(producto.imagenLocal)}`} alt={`Vista de ${producto.nombre}`} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6 }} />}
+      <label>Imagen local (JPG, PNG o WebP; máximo 2 MB) <input aria-label={`Imagen local de ${producto.nombre}`} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setArchivo(e.target.files?.[0] || null)} /></label>
+      <button type="button" style={control} disabled={ocupado || !archivo} onClick={() => guardarImagen({id:producto.id,archivo,onDone:()=>setArchivo(null)})}>Guardar imagen</button>
+      {producto.imagenLocal && <button type="button" style={control} disabled={ocupado} onClick={() => window.confirm('¿Quitar la imagen de este producto?') && eliminarImagen(producto.id)}>Quitar imagen</button>}
+    </div>
   </form>;
 }
 
@@ -39,10 +44,12 @@ export function TiendaOnline() {
   const actualizacion = useMutation({ mutationFn: ({ id, data }) => svc.actualizar(id, data),
     onSuccess: () => { invalidar(); toast.success('Cambio guardado. Sincronizá para actualizar la tienda.'); },
     onError: e => toast.error(e.response?.data?.error || 'No se pudo guardar el cambio.') });
+  const imagen = useMutation({ mutationFn: ({id,archivo}) => svc.guardarImagen(id,archivo), onSuccess: (_r,v) => { v.onDone?.();invalidar();toast.success('Imagen guardada. Sincronizá para publicarla.'); }, onError:e=>toast.error(e.response?.data?.error||'No se pudo guardar la imagen.') });
+  const quitarImagen = useMutation({ mutationFn: svc.eliminarImagen, onSuccess:()=>{invalidar();toast.success('Imagen quitada. Sincronizá para actualizar la tienda.');},onError:e=>toast.error(e.response?.data?.error||'No se pudo quitar la imagen.') });
   const sync = useMutation({ mutationFn: svc.sincronizar,
     onSuccess: r => { invalidar(); toast.success(r.mensaje); if (r.advertencia) toast.error(r.advertencia); },
     onError: e => { invalidar(); toast.error(e.response?.data?.mensaje || 'No se pudo confirmar la sincronización. Revisá el estado antes de reintentar.'); } });
-  const ocupado = sync.isPending || estado.data?.ejecutando;
+  const ocupado = sync.isPending || imagen.isPending || quitarImagen.isPending || estado.data?.ejecutando;
   const ultima = estado.data?.ultimaSincronizacion;
   const lista = (productos.data || []).filter(p => (!linea || p.linea === linea) && (!soloHabilitados || p.publicarOnline) && `${p.nombre} ${p.codigo || ''} ${p.categoria || ''}`.toLocaleLowerCase().includes(buscar.toLocaleLowerCase()));
   return <Layout titulo="Tienda Online">
@@ -72,7 +79,7 @@ export function TiendaOnline() {
         <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input aria-label={`Publicar online: ${p.nombre}`} type="checkbox" checked={Boolean(p.publicarOnline)} disabled={ocupado || actualizacion.isPending} onChange={e => actualizacion.mutate({ id: p.id, data: { publicarOnline: e.target.checked } })} />Publicar online</label>
         <button style={control} onClick={() => setEditar(editar === p.id ? null : p.id)}>Precio, categoría e imagen</button>
       </div>
-      {editar === p.id && <DatosPublicos key={`${p.id}:${p.categoriaOnline}:${p.imagenUrl}:${p.precioOnline}`} producto={p} guardar={actualizacion.mutate} ocupado={ocupado || actualizacion.isPending} />}
+      {editar === p.id && <DatosPublicos key={`${p.id}:${p.categoriaOnline}:${p.imagenUrl}:${p.precioOnline}`} producto={p} guardar={actualizacion.mutate} guardarImagen={imagen.mutate} eliminarImagen={quitarImagen.mutate} ocupado={ocupado || actualizacion.isPending} />}
     </article>)}
   </Layout>;
 }

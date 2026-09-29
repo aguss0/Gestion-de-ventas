@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const imagenes = require('./imagenTiendaService');
 
 function productoPublico(a) {
   const precio = a.precioOnline ?? a.precio;
@@ -17,7 +18,7 @@ function productoPublico(a) {
   };
 }
 
-function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env,
+function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env, imagenesImpl = imagenes,
   estadoPath = path.join(__dirname, '../../data/tienda-online-estado.json') }) {
   let ejecutando = false;
   async function leerEstado() {
@@ -35,7 +36,7 @@ function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env
     try { url = new URL(env.CATALOGO_API_URL); } catch { throw new Error('Configurá CATALOGO_API_URL en el backend local.'); }
     if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error('La API del catálogo debe usar HTTPS sin credenciales en la URL.');
     if (!env.CATALOGO_SYNC_TOKEN || env.CATALOGO_SYNC_TOKEN.length < 32) throw new Error('Configurá una credencial de sincronización de al menos 32 caracteres en el backend local.');
-    return { url: new URL('/api/catalogo/sincronizar', url).href, token: env.CATALOGO_SYNC_TOKEN };
+    return { url: new URL('/api/catalogo/sincronizar', url).href, origin: url.origin, token: env.CATALOGO_SYNC_TOKEN };
   }
   async function resumen() {
     const [habilitados, ultimaSincronizacion] = await Promise.all([
@@ -44,6 +45,17 @@ function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env
     let configurado = true;
     try { configuracion(); } catch { configurado = false; }
     return { habilitados, ultimaSincronizacion, ejecutando, configurado };
+  }
+  async function sincronizarImagen(articulo, config) {
+    const endpoint = new URL('/api/catalogo/imagenes/' + articulo.id, config.origin);
+    if (articulo.imagenLocal) {
+      const imagen = await imagenesImpl.leer(articulo.imagenLocal);
+      let response;
+      try { response = await fetchImpl(endpoint, { method:'PUT', redirect:'error', signal:AbortSignal.timeout(30000), headers:{ Authorization:'Bearer '+config.token, 'Content-Type':imagen.mimetype, 'Content-Length':String(imagen.buffer.length), 'X-Content-Sha256':imagen.hash }, body:imagen.buffer }); }
+      catch { throw new Error('No se pudo enviar la imagen del artículo '+articulo.id+'. Verifique la conexión a Internet.'); }
+      if (!response.ok) throw new Error('No se pudo publicar la imagen del artículo '+articulo.id+' (HTTP '+response.status+').');
+      articulo.imagenUrl = new URL('/api/imagenes/' + articulo.id, config.origin).href;
+    }
   }
   async function sincronizar() {
     if (ejecutando) throw Object.assign(new Error('Ya hay una sincronización en curso.'), { status: 409 });
@@ -55,11 +67,12 @@ function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env
       const articulos = await prisma.articulo.findMany({
         where: { publicarOnline: true, activo: true },
         select: { id: true, codigo: true, nombre: true, descripcion: true, precio: true, precioOnline: true,
-          categoriaOnline: true, imagenUrl: true, presentacion: true, unidadCaja: true,
+          categoriaOnline: true, imagenUrl: true, imagenLocal: true, presentacion: true, unidadCaja: true,
           activo: true, manejaStock: true, stock: true,
           dietetica: { select: { categoria: true, sinStock: true } },
           descartable: { select: { categoria: true } } },
       });
+      for (const articulo of articulos) await sincronizarImagen(articulo, config);
       const productos = articulos.map(productoPublico);
       if (productos.some(p => !Number.isSafeInteger(p.precioCentavos))) throw new Error('Hay un precio fuera del rango admitido. Revisá los artículos habilitados.');
       const sincronizacionId = crypto.randomUUID();
