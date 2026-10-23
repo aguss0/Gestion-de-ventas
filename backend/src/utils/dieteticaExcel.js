@@ -1,9 +1,17 @@
 const XLSX = require('xlsx');
 const { createHash } = require('node:crypto');
 const normalizar = s => String(s ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
-function precio(valor, fila) {
+function precio(valor, fila, avisos = []) {
   if (valor == null || ['', '-', '_', 'SIN STOCK'].includes(normalizar(valor))) return null;
-  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor <= 0) throw new Error(`Precio inválido en fila ${fila}. No se importó nada.`);
+  // Número guardado como texto ("1.234,50" o "1234.5")
+  if (typeof valor === 'string' && /^\d{1,3}(\.\d{3})*(,\d+)?$|^\d+([.,]\d+)?$/.test(valor.trim())) {
+    const n = Number(valor.trim().replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor <= 0) {
+    avisos.push(`Fila ${fila}: valor no numérico "${String(valor).trim()}", se tomó como sin precio.`);
+    return null;
+  }
   return valor;
 }
 function cantidadPresentacion(texto) {
@@ -34,8 +42,8 @@ function leerExcel(buffer, tipoBloqueFinal = 'pendiente') {
         if (!nombre.includes(',') && !/FECHA|BAJA.*PRECIO|AUMENTO.*PRECIO/.test(nombre)) categoria = nombre;
         continue;
       }
-      const costoUnidad = precio(c, i + 1), costoMayorista = precio(d, i + 1);
-      const sinStock = [c, d].some(v => normalizar(v) === 'SIN STOCK');
+      const costoUnidad = precio(c, i + 1, advertencias), costoMayorista = precio(d, i + 1, advertencias);
+      const sinStock = [c, d].some(v => /^SIN ST/.test(normalizar(v)));
       if (costoUnidad == null && costoMayorista == null && !sinStock) continue;
       filasPrecio++;
       const presentacion = normalizar(e), unidadesBulto = cantidadPresentacion(presentacion);

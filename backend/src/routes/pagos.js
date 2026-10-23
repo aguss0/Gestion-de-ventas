@@ -23,29 +23,57 @@ router.post("/", async (req, res) => {
     const pedido = await tx.pedido.findUnique({ where: { id: Number(pedidoId) } });
     if (!pedido) throw { status: 404, message: "Pedido no encontrado" };
 
-    // Registrar pago
-    const pago = await tx.pago.create({
-      data: {
-        pedidoId:  Number(pedidoId),
-        clienteId: Number(clienteId || pedido.clienteId),
-        monto:     Number(monto),
-        metodo,
-        fecha:     fecha ? new Date(fecha) : new Date(),
-        observaciones,
-      },
-    });
+    // Si el monto supera el saldo, el excedente pasa a los próximos pedidos
+    // con saldo del mismo cliente (del más antiguo al más nuevo)
+    let excedente = Math.max(0, Number(monto) - pedido.saldo);
+    const reparto = [];
+    if (excedente > 0) {
+      const otros = await tx.pedido.findMany({
+        where: { clienteId: pedido.clienteId, activo: true, saldo: { gt: 0 }, id: { not: pedido.id } },
+        orderBy: { nroOrden: "asc" },
+      });
+      for (const otro of otros) {
+        if (excedente <= 0) break;
+        const aplicado = Math.min(excedente, otro.saldo);
+        reparto.push({ pedido: otro, monto: aplicado });
+        excedente -= aplicado;
+      }
+    }
 
-    // Actualizar saldo del pedido
-    const nuevoTotalPagado = pedido.totalPagado + Number(monto);
-    await tx.pedido.update({
-      where: { id: pedido.id },
-      data: {
-        totalPagado: nuevoTotalPagado,
-        saldo:       Math.max(0, pedido.total - nuevoTotalPagado),
-      },
-    });
+    // Lo que no se pudo repartir queda en el pedido original
+    const montoOriginal = Number(monto) - reparto.reduce((s, r) => s + r.monto, 0);
+    const aplicaciones = [{ pedido, monto: montoOriginal }, ...reparto];
 
-    return pago;
+    const pagos = [];
+    for (const [i, a] of aplicaciones.entries()) {
+      // Registrar pago
+      const pago = await tx.pago.create({
+        data: {
+          pedidoId:  a.pedido.id,
+          clienteId: Number(clienteId || pedido.clienteId),
+          monto:     a.monto,
+          metodo,
+          fecha:     fecha ? new Date(fecha) : new Date(),
+          observaciones: i === 0
+            ? observaciones
+            : [observaciones, `Excedente del pago del pedido #${pedido.nroOrden}`].filter(Boolean).join(" — "),
+        },
+      });
+
+      // Actualizar saldo del pedido
+      const nuevoTotalPagado = a.pedido.totalPagado + a.monto;
+      await tx.pedido.update({
+        where: { id: a.pedido.id },
+        data: {
+          totalPagado: nuevoTotalPagado,
+          saldo:       Math.max(0, a.pedido.total - nuevoTotalPagado),
+        },
+      });
+
+      pagos.push({ ...pago, nroOrden: a.pedido.nroOrden });
+    }
+
+    return { ...pagos[0], aplicados: pagos };
   });
 
   res.status(201).json(resultado);

@@ -53,7 +53,10 @@ function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env
       let response;
       try { response = await fetchImpl(endpoint, { method:'PUT', redirect:'error', signal:AbortSignal.timeout(30000), headers:{ Authorization:'Bearer '+config.token, 'Content-Type':imagen.mimetype, 'Content-Length':String(imagen.buffer.length), 'X-Content-Sha256':imagen.hash }, body:imagen.buffer }); }
       catch { throw new Error('No se pudo enviar la imagen del artículo '+articulo.id+'. Verifique la conexión a Internet.'); }
-      if (!response.ok) throw new Error('No se pudo publicar la imagen del artículo '+articulo.id+' (HTTP '+response.status+').');
+      if (!response.ok) {
+        console.error('[imagen]', articulo.id, 'PUT', endpoint.href, '->', response.status, '| Allow:', response.headers.get('allow'), '|', (await response.text().catch(() => '')).slice(0, 300));
+        throw new Error('No se pudo publicar la imagen del artículo '+articulo.id+' (HTTP '+response.status+').');
+      }
       articulo.imagenUrl = new URL('/api/imagenes/' + articulo.id, config.origin).href;
     }
   }

@@ -27,8 +27,11 @@ export function Pagos() {
       monto: Number(monto),
       metodo, fecha, observaciones: obs || undefined,
     }),
-    onSuccess: () => {
-      toast.success("Pago registrado");
+    onSuccess: (res) => {
+      const extra = (res?.aplicados || []).slice(1);
+      toast.success(extra.length
+        ? `Pago registrado. Excedente aplicado a: ${extra.map(a => `#${a.nroOrden} (${fmt(a.monto)})`).join(", ")}`
+        : "Pago registrado");
       queryClient.invalidateQueries(["pagos"]);
       queryClient.invalidateQueries(["pedidos"]);
       queryClient.invalidateQueries(["estadocuenta"]);
@@ -78,6 +81,11 @@ export function Pagos() {
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Monto *</label>
             <input type="number" min="0" style={inputStyle} value={monto} onChange={e => setMonto(e.target.value)} placeholder="0" />
+            {pedido && Number(monto) > pedido.saldo && (
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                El excedente de {fmt(Number(monto) - pedido.saldo)} se aplicará a los próximos pedidos con saldo de este cliente.
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: 12 }}>

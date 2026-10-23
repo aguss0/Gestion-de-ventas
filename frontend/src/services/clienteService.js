@@ -12,6 +12,11 @@ export const articuloService = {
   crear:   (d) => api.post("/articulos", d).then(r => r.data),
   editar:  (id, d) => api.patch(`/articulos/${id}`, d).then(r => r.data),
   eliminar:(id) => api.delete(`/articulos/${id}`).then(r => r.data),
+  subirImagen: (id, archivo) => {
+    const formData = new FormData();
+    formData.append("imagen", archivo);
+    return api.post(`/productos/${id}/imagen`, formData).then(r => r.data);
+  },
 };
 
 export const vendedorService = {
