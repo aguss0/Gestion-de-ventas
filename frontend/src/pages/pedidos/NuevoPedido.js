@@ -84,6 +84,7 @@ export function NuevoPedido() {
   const [obsItem, setObsItem]           = useState("");
   const [nroOrden, setNroOrden] = useState("");
   const [descuento, setDescuento] = useState(0);
+  const [descuentoGeneral, setDescuentoGeneral] = useState(0);
   const [catalogo, setCatalogo] = useState(location.state?.catalogo || 'papas');
   const preciosLista = new Map((location.state?.preciosLista || []).map(item => [Number(item.articuloId), Number(item.precio)]));
 
@@ -120,7 +121,15 @@ export function NuevoPedido() {
 
   const articulo = articulos.find(a => a.id === Number(articuloId));
   const precioArticulo = articulo ? (preciosLista.get(articulo.id) ?? Number(articulo.precio || 0)) : 0;
-  const total    = items.reduce((s, i) => s + i.subtotal, 0);
+  const subtotalItems = items.reduce((s, i) => s + i.subtotal, 0);
+  // El descuento general se aplica al precio de cada artículo al guardar,
+  // así comisiones, faltantes y reportes siguen calculándose desde el detalle.
+  const factorGeneral = 1 - Number(descuentoGeneral) / 100;
+  const itemsConDescuentoGeneral = items.map(i => {
+    const precio = Math.round(i.precio * factorGeneral * 100) / 100;
+    return { ...i, precio, subtotal: precio * (i.cantidad - (i.cantidadFaltante || 0)) };
+  });
+  const total = itemsConDescuentoGeneral.reduce((s, i) => s + i.subtotal, 0);
   const precioConDescuento = precioCustom
   ? Number(precioCustom)
   : precioArticulo * (1 - Number(descuento) / 100);
@@ -183,7 +192,7 @@ export function NuevoPedido() {
         clienteId: Number(clienteId),
         vendedorId: vendedorId ? Number(vendedorId) : null,
         fecha,
-        items,
+        items: itemsConDescuentoGeneral,
         observaciones: obs || undefined,
       };
       return esEdicion ? pedidoService.editar(id, datos) : pedidoService.crear(datos);
@@ -386,7 +395,27 @@ export function NuevoPedido() {
                 ))}
               </tbody>
             </table>
-            <div style={{ borderTop: "2px solid var(--border)", marginTop: 8, paddingTop: 10, display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ borderTop: "2px solid var(--border)", marginTop: 8, paddingTop: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+              {!esEdicion && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                    <label htmlFor="descuento-general" style={{ color: "var(--muted)" }}>Descuento general %</label>
+                    <input
+                      id="descuento-general"
+                      type="number" min="0" max="100"
+                      style={{ ...inputStyle, width: 80, padding: "5px 6px" }}
+                      value={descuentoGeneral}
+                      onChange={e => setDescuentoGeneral(Math.min(100, Math.max(0, Number(e.target.value))))}
+                    />
+                  </div>
+                  {Number(descuentoGeneral) > 0 && (
+                    <div style={{ fontSize: 13, color: "var(--muted)", textAlign: "right" }}>
+                      <div>Subtotal: {fmt(subtotalItems)}</div>
+                      <div>Descuento ({descuentoGeneral}%): <span style={{ color: "var(--danger)" }}>−{fmt(subtotalItems - total)}</span></div>
+                    </div>
+                  )}
+                </>
+              )}
               <span style={{ fontSize: 16, fontWeight: 600 }}>Total: {fmt(total)}</span>
             </div>
           </div>
