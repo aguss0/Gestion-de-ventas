@@ -3,18 +3,31 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const imagenes = require('./imagenTiendaService');
 
+function leerPreciosOnline(texto) {
+  if (!texto) return [];
+  try { const lista = JSON.parse(texto); return Array.isArray(lista) ? lista : []; } catch { return []; }
+}
+
 function productoPublico(a) {
   const precio = a.precioOnline ?? a.precio;
+  const nombre = a.nombreOnline?.trim() || a.nombre?.trim();
+  const renglones = leerPreciosOnline(a.preciosOnline);
+  if (renglones.some(r => r.precio != null && (!Number.isFinite(r.precio) || r.precio < 0 || r.precio > 1000000000))) {
+    throw new Error(`Revisá los precios de tienda del artículo ${a.id} (${a.nombre || 'sin nombre'}).`);
+  }
   if (!Number.isSafeInteger(a.id) || a.id < 1 || !a.nombre?.trim() || !Number.isFinite(precio) || precio < 0 || precio > 1000000000) {
     throw new Error(`Revisá el nombre o precio del artículo ${a.id} (${a.nombre || 'sin nombre'}).`);
   }
   const disponible = a.activo && (!a.manejaStock || a.stock > 0) && !a.dietetica?.sinStock;
   return {
-    articuloLocalId: a.id, codigo: a.codigo || null, nombre: a.nombre.trim(),
-    descripcion: a.descripcion || null, precioCentavos: Math.round(precio * 100),
+    articuloLocalId: a.id, codigo: a.codigo || null, nombre,
+    descripcion: a.descripcion || null, precioCentavos: Math.round((renglones[0] ? renglones[0].precio ?? precio : precio) * 100),
     categoria: a.categoriaOnline || a.dietetica?.categoria || a.descartable?.categoria || (a.manejaStock ? 'Dietética' : 'Laurens'),
     presentacion: a.presentacion || a.unidadCaja || null,
     imagenUrl: a.imagenUrl || null, disponible: Boolean(disponible),
+    // Sólo se envía cuando hay renglones cargados; sin renglones la tienda muestra el precio único.
+    ...(renglones.length ? { precios: renglones.map(r => ({ tipo: r.tipo, detalle: r.detalle || null,
+      precioCentavos: Math.round((r.precio ?? precio) * 100), pasoGramos: r.tipo === 'peso' ? r.pasoGramos : null })) } : {}),
   };
 }
 
@@ -69,7 +82,7 @@ function crearCatalogoSyncService({ prisma, fetchImpl = fetch, env = process.env
       const config = configuracion();
       const articulos = await prisma.articulo.findMany({
         where: { publicarOnline: true, activo: true },
-        select: { id: true, codigo: true, nombre: true, descripcion: true, precio: true, precioOnline: true,
+        select: { id: true, codigo: true, nombre: true, nombreOnline: true, preciosOnline: true, descripcion: true, precio: true, precioOnline: true,
           categoriaOnline: true, imagenUrl: true, imagenLocal: true, presentacion: true, unidadCaja: true,
           activo: true, manejaStock: true, stock: true,
           dietetica: { select: { categoria: true, sinStock: true } },

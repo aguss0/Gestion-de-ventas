@@ -42,6 +42,8 @@ model Articulo {
   precio      Float
   activo      Boolean  @default(true)
   precioOnline Float? @map("precio_online")
+  nombreOnline String? @map("nombre_online")
+  preciosOnline String? @map("precios_online")
   publicarOnline Boolean @default(false) @map("publicar_online")
   categoriaOnline String? @map("categoria_online")
   imagenUrl String? @map("imagen_url")

@@ -83,3 +83,21 @@ test('Sube la imagen local antes del catálogo y publica su dirección de Cloudf
  const servicio=crearCatalogoSyncService({prisma,fetchImpl,env:{CATALOGO_API_URL:'https://catalogo.example.com',CATALOGO_SYNC_TOKEN:'x'.repeat(40)},imagenesImpl:{leer:async()=>({buffer:Buffer.from([1,2,3]),mimetype:'image/png',hash:'a'.repeat(64)})},estadoPath:path.join(dir,'estado.json')});
  try{assert.equal((await servicio.sincronizar()).exitoso,true);assert.equal(llamadas[0].url,'https://catalogo.example.com/api/catalogo/imagenes/1');assert.equal(llamadas[0].options.headers['X-Content-Sha256'],'a'.repeat(64));assert.equal(llamadas[1].url,'https://catalogo.example.com/api/catalogo/sincronizar');}finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+
+test('Nombre en tienda y renglones de precio: se validan, se guardan como JSON y se publican', () => {
+  const { validarPreciosOnline } = require('../src/utils/publicacionOnline');
+  assert.deepEqual(publicacionOnline({ nombreOnline: '  Almendra Non Pareil ' }), { nombreOnline: 'Almendra Non Pareil' });
+  assert.deepEqual(publicacionOnline({ nombreOnline: '' }), { nombreOnline: null });
+  assert.equal(validarPreciosOnline([]), null);
+  const guardado = validarPreciosOnline([{ tipo: 'peso', detalle: ' ', precio: null, pasoGramos: 250 }, { tipo: 'bulto', detalle: '10 kg', precio: 289000, pasoGramos: 99 }]);
+  assert.deepEqual(JSON.parse(guardado), [{ tipo: 'peso', detalle: null, precio: null, pasoGramos: 250 }, { tipo: 'bulto', detalle: '10 kg', precio: 289000, pasoGramos: null }]);
+  for (const malo of [[{ tipo: 'litro' }], [{ tipo: 'peso', pasoGramos: 5 }], [{ tipo: 'unidad', precio: -1 }], [{ tipo: 'pack', detalle: 'x'.repeat(61) }], Array(7).fill({ tipo: 'unidad' }), 'texto'])
+    assert.throws(() => validarPreciosOnline(malo), undefined, JSON.stringify(malo));
+  const conRenglones = { ...articulo, nombreOnline: 'Almendra Non Pareil', precioOnline: 294, preciosOnline: guardado };
+  const publico = productoPublico(conRenglones);
+  assert.equal(publico.nombre, 'Almendra Non Pareil');
+  assert.equal(publico.precioCentavos, 29400);
+  assert.deepEqual(publico.precios, [{ tipo: 'peso', detalle: null, precioCentavos: 29400, pasoGramos: 250 }, { tipo: 'bulto', detalle: '10 kg', precioCentavos: 28900000, pasoGramos: null }]);
+  assert.equal('precios' in productoPublico(articulo), false);
+  assert.equal(productoPublico({ ...articulo, nombreOnline: '  ' }).nombre, 'Almendras');
+});

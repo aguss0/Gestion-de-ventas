@@ -5,6 +5,7 @@ const multer = require('multer');
 const imagenes = require('../services/imagenTiendaService');
 const { crearCatalogoSyncService } = require('../services/catalogoSyncService');
 const servicio = crearCatalogoSyncService({ prisma });
+const leerPreciosOnline = t => { try { const l = JSON.parse(t || '[]'); return Array.isArray(l) ? l : []; } catch { return []; } };
 const recibirImagen=multer({storage:multer.memoryStorage(),limits:{fileSize:2*1024*1024,files:1}}).single('imagen');
 const cargar=(req,res,next)=>recibirImagen(req,res,e=>e?res.status(e.code==='LIMIT_FILE_SIZE'?413:400).json({error:e.code==='LIMIT_FILE_SIZE'?'La imagen debe pesar como máximo 2 MB.':'No se pudo leer la imagen.'}):next());
 
@@ -25,10 +26,10 @@ router.use((req, res, next) => {
 router.get('/estado', async (_req, res) => res.json(await servicio.resumen()));
 router.get('/productos', async (_req, res) => {
   const articulos = await prisma.articulo.findMany({ orderBy: { nombre: 'asc' },
-    select: { id: true, nombre: true, codigo: true, precio: true, precioOnline: true, activo: true, publicarOnline: true,
+    select: { id: true, nombre: true, nombreOnline: true, preciosOnline: true, codigo: true, precio: true, precioOnline: true, activo: true, publicarOnline: true,
       categoriaOnline: true, imagenUrl: true, imagenLocal: true, presentacion: true, manejaStock: true,
       dietetica: { select: { categoria: true } }, descartable: { select: { categoria: true } } } });
-  res.json(articulos.map(({ dietetica, descartable, ...a }) => ({ ...a,
+  res.json(articulos.map(({ dietetica, descartable, ...a }) => ({ ...a, preciosOnline: leerPreciosOnline(a.preciosOnline),
     linea: descartable ? 'Descartables' : dietetica ? 'MF' : a.manejaStock ? 'Dietética' : 'Laurens',
     categoria: a.categoriaOnline || dietetica?.categoria || descartable?.categoria || null })));
 });
