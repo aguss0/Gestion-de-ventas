@@ -1,0 +1,129 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🏢 Sistema Ventas
+      - button "◂" [ref=e7] [cursor=pointer]
+    - navigation [ref=e8]:
+      - generic [ref=e9] [cursor=pointer]:
+        - generic [ref=e10]: ↗
+        - generic [ref=e11]: Tienda Online
+      - generic [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]: 🧾
+        - generic [ref=e14]: Pedidos
+      - generic [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: 💰
+        - generic [ref=e17]: Estado de cuenta
+      - generic [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: 💳
+        - generic [ref=e20]: Pagos
+      - generic [ref=e21] [cursor=pointer]:
+        - generic [ref=e22]: 📊
+        - generic [ref=e23]: Comisiones
+      - generic [ref=e24] [cursor=pointer]:
+        - generic [ref=e25]: 👥
+        - generic [ref=e26]: Clientes
+      - generic [ref=e27] [cursor=pointer]:
+        - generic [ref=e28]: 📦
+        - generic [ref=e29]: Laurens
+      - generic [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: 🥤
+        - generic [ref=e32]: Descartables
+      - generic [ref=e33] [cursor=pointer]:
+        - generic [ref=e34]: 📋
+        - generic [ref=e35]: MF
+      - generic [ref=e36] [cursor=pointer]:
+        - generic [ref=e37]: 🌿
+        - generic [ref=e38]: Dietética
+      - generic [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: 🗂️
+        - generic [ref=e41]: Listas de precios
+      - generic [ref=e42] [cursor=pointer]:
+        - generic [ref=e43]: 🤝
+        - generic [ref=e44]: Vendedores
+  - generic [ref=e45]:
+    - generic [ref=e46]: Nuevo pedido
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - generic [ref=e51]: Datos del pedido
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e54]: Cliente *
+            - generic [ref=e55]:
+              - textbox "Buscar cliente..." [active] [ref=e56]
+              - generic [ref=e95]:
+                - generic [ref=e97] [cursor=pointer]:
+                  - generic [ref=e98]: Autoservicio Casonas de Norte
+                  - generic [ref=e99]: "Vendedor: Turko"
+                - generic [ref=e101] [cursor=pointer]:
+                  - generic [ref=e102]: Dietetica Nva Cba
+                  - generic [ref=e103]: "Vendedor: Miguel"
+                - generic [ref=e105] [cursor=pointer]:
+                  - generic [ref=e106]: Distribuidora Masi S.A.
+                  - generic [ref=e107]: "Vendedor: Turko"
+                - generic [ref=e109] [cursor=pointer]:
+                  - generic [ref=e110]: Distribuidora San Guillermo
+                  - generic [ref=e111]: "Vendedor: Turko"
+                - generic [ref=e113] [cursor=pointer]:
+                  - generic [ref=e114]: Establecimiento Feli S.A.
+                  - generic [ref=e115]: "Vendedor: Gerardo"
+                - generic [ref=e117] [cursor=pointer]:
+                  - generic [ref=e118]: GDA
+                  - generic [ref=e119]: "Vendedor: Gerardo"
+                - generic [ref=e121] [cursor=pointer]:
+                  - generic [ref=e122]: Grandiet
+                  - generic [ref=e123]: "Vendedor: Miguel"
+                - generic [ref=e125] [cursor=pointer]:
+                  - generic [ref=e126]: La Queseria
+                  - generic [ref=e127]: "Vendedor: Turko"
+                - generic [ref=e129] [cursor=pointer]:
+                  - generic [ref=e130]: Mariel - Cole Peña
+                  - generic [ref=e131]: "Vendedor: Miguel"
+                - generic [ref=e133] [cursor=pointer]:
+                  - generic [ref=e134]: Verde Limon - Urca
+                  - generic [ref=e135]: "Vendedor: Miguel"
+          - generic [ref=e57]:
+            - generic [ref=e58]: Vendedor
+            - combobox [ref=e59]:
+              - option "— Sin vendedor —" [selected]
+              - option "Agus"
+              - option "Gerardo"
+              - option "Miguel"
+              - option "Turko"
+          - generic [ref=e60]:
+            - generic [ref=e61]: N° Orden
+            - spinbutton "Automático" [ref=e62]
+          - generic [ref=e63]:
+            - generic [ref=e64]: Fecha
+            - textbox [ref=e65]: 2026-11-17
+        - generic [ref=e66]:
+          - generic [ref=e67]: Observaciones del pedido
+          - textbox "Opcional…" [ref=e68]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: Agregar artículo
+          - combobox "Catálogo de artículos" [ref=e72]:
+            - option "Laurens" [selected]
+            - option "Descartables"
+            - option "MF"
+            - option "Dietética"
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - generic [ref=e76]: Artículo *
+              - textbox "Buscar artículo..." [ref=e78]
+            - generic [ref=e79]:
+              - generic [ref=e80]: Cantidad
+              - spinbutton "0" [ref=e81]
+            - generic [ref=e82]:
+              - generic [ref=e83]: Precio
+              - textbox "Automático" [ref=e84]
+            - generic [ref=e85]:
+              - generic [ref=e86]: Descuento %
+              - spinbutton "0" [ref=e87]
+            - button "+ Agregar" [ref=e88] [cursor=pointer]
+          - generic [ref=e89]:
+            - generic [ref=e90]: Observaciones del artículo
+            - textbox "Opcional…" [ref=e91]
+      - generic [ref=e92]:
+        - button "Cancelar" [ref=e93] [cursor=pointer]
+        - button "Confirmar pedido" [ref=e94] [cursor=pointer]

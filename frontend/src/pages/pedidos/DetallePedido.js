@@ -52,6 +52,15 @@ export function DetallePedido() {
   if (isLoading) return <Layout titulo="Detalle de pedido"><div style={{ padding: 32, color: "var(--muted)" }}>Cargando…</div></Layout>;
   if (!pedido)   return <Layout titulo="Detalle de pedido"><div style={{ padding: 32, color: "var(--muted)" }}>Pedido no encontrado</div></Layout>;
 
+  // Los precios guardados ya incluyen ambos descuentos; se reconstruyen los montos para mostrarlos.
+  const descuentoGeneral = Number(pedido.descuentoGeneral || 0);
+  const entregadoDe = d => d.cantidad - (d.cantidadFaltante || 0);
+  const ahorroGeneral = descuentoGeneral > 0 && descuentoGeneral < 100
+    ? (pedido.detalle || []).reduce((s, d) => s + d.precio * entregadoDe(d) * descuentoGeneral / (100 - descuentoGeneral), 0)
+    : 0;
+  const ahorroArticulos = (pedido.detalle || []).reduce((s, d) =>
+    s + (d.precioLista ? d.precioLista * d.descuentoPct / 100 * entregadoDe(d) : 0), 0);
+
   return (
     <Layout
       titulo={`Pedido #${pedido.nroOrden}`}
@@ -93,6 +102,16 @@ export function DetallePedido() {
             <div><div style={{ color: "var(--muted)", marginBottom: 4 }}>Pagado</div><div style={{ color: "var(--success)", fontWeight: 500 }}>{fmt(pedido.totalPagado)}</div></div>
             <div><div style={{ color: "var(--muted)", marginBottom: 4 }}>Saldo</div><div style={{ color: pedido.saldo > 0 ? "var(--danger)" : "var(--success)", fontWeight: 500 }}>{pedido.saldo > 0 ? fmt(pedido.saldo) : "✓ Saldado"}</div></div>
           </div>
+          {(descuentoGeneral > 0 || ahorroArticulos > 0) && (
+            <div style={{ marginTop: 12, padding: "8px 12px", background: "#fef9c3", borderRadius: 6, fontSize: 13, display: "flex", flexWrap: "wrap", gap: "4px 24px" }}>
+              {descuentoGeneral > 0 && (
+                <span>Descuento general: <strong>{descuentoGeneral}%</strong>{ahorroGeneral > 0 && <span style={{ color: "var(--danger)" }}> (−{fmt(ahorroGeneral)})</span>}</span>
+              )}
+              {ahorroArticulos > 0 && (
+                <span>Descuentos por artículo: <strong style={{ color: "var(--danger)" }}>−{fmt(ahorroArticulos)}</strong></span>
+              )}
+            </div>
+          )}
           {pedido.observaciones && (
             <div style={{ marginTop: 12, padding: "8px 12px", background: "var(--bg)", borderRadius: 6, fontSize: 13, color: "var(--muted)" }}>
               📝 {pedido.observaciones}
@@ -131,7 +150,15 @@ export function DetallePedido() {
                       {d.cantidadFaltante > 0 ? d.cantidadFaltante : "—"}
                     </td>
                     <td style={{ padding: "9px 14px", fontWeight: 500 }}>{entregado}</td>
-                    <td style={{ padding: "9px 14px" }}>{fmt(d.precio)}</td>
+                    <td style={{ padding: "9px 14px" }}>
+                      {fmt(d.precio)}
+                      {d.precioLista > d.precio && (
+                        <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                          <s>{fmt(d.precioLista)}</s>
+                          {d.descuentoPct > 0 && <span style={{ color: "var(--danger)" }}> −{d.descuentoPct}%</span>}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: "9px 14px", fontWeight: 500 }}>{fmt(d.subtotal)}</td>
                     <td style={{ padding: "9px 14px" }}>
                       <div style={{ display: "flex", gap: 6 }}>

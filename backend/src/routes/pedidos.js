@@ -1,6 +1,17 @@
 const router = require("express").Router();
 const prisma = require("../utils/prisma");
+const { r2, saldoDe } = require("../utils/dinero");
 const { actualizarComisionPedido } = require("../utils/comisionPedido");
+
+// Datos informativos del descuento por artículo; el precio ya viene descontado.
+function descuentosItem(i) {
+  const precioLista = Number(i.precioLista);
+  const descuentoPct = Number(i.descuentoPct || 0);
+  return {
+    precioLista:  Number.isFinite(precioLista) && precioLista > 0 ? precioLista : null,
+    descuentoPct: Number.isFinite(descuentoPct) ? Math.min(100, Math.max(0, descuentoPct)) : 0,
+  };
+}
 
 async function configuracionComisionCliente(tx, clienteId) {
   const cliente = await tx.cliente.findUnique({
@@ -78,12 +89,16 @@ router.get("/:id", async (req, res) => {
 
 // POST crear pedido con detalle
 router.post("/", async (req, res) => {
-  const { clienteId, vendedorId, fecha, items, observaciones, nroOrden: nroOrdenBody } = req.body;
+  const { clienteId, vendedorId, fecha, items, observaciones, nroOrden: nroOrdenBody, descuentoGeneral } = req.body;
   if (!clienteId || !items?.length) {
     return res.status(400).json({ error: "Cliente e items requeridos" });
   }
+  const descuentoCliente = descuentoGeneral === undefined ? undefined : Number(descuentoGeneral || 0);
+  if (descuentoCliente !== undefined && (!Number.isFinite(descuentoCliente) || descuentoCliente < 0 || descuentoCliente > 100)) {
+    return res.status(400).json({ error: "El descuento general debe estar entre 0 y 100" });
+  }
 
-  const total  = items.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+  const total  = r2(items.reduce((s, i) => s + (i.precio * i.cantidad), 0));
 
   // Número de orden: manual si viene en el body, automático si no
   let nroOrden;
@@ -108,6 +123,7 @@ router.post("/", async (req, res) => {
         total,
         saldo:      total,
         observaciones,
+        descuentoGeneral: descuentoCliente || 0,
       },
     });
 
@@ -126,6 +142,7 @@ router.post("/", async (req, res) => {
         precio:        Number(i.precio),
         subtotal:      Number(i.precio) * Number(i.cantidad),
         observaciones: i.observaciones || null,
+        ...descuentosItem(i),
       })),
     });
 
@@ -146,6 +163,11 @@ router.post("/", async (req, res) => {
     }
 
     await actualizarComisionPedido(tx, p.id);
+
+    // El último descuento general usado queda como predeterminado del cliente.
+    if (descuentoCliente !== undefined) {
+      await tx.cliente.update({ where: { id: Number(clienteId) }, data: { descuentoGeneral: descuentoCliente } });
+    }
 
     return p;
   });
@@ -206,10 +228,11 @@ router.patch("/:id", async (req, res) => {
       cantidadFaltante,
       subtotal: precio * (cantidad - cantidadFaltante),
       observaciones: i.observaciones || null,
+      ...descuentosItem(i),
     };
   });
 
-  const total = itemsNormalizados.reduce((s, i) => s + i.subtotal, 0);
+  const total = r2(itemsNormalizados.reduce((s, i) => s + i.subtotal, 0));
 
   const actualizado = await prisma.$transaction(async (tx) => {
     const anterior = await tx.pedido.findUnique({
@@ -272,7 +295,7 @@ router.patch("/:id", async (req, res) => {
         fecha: fecha ? new Date(fecha + "T12:00:00") : anterior.fecha,
         observaciones: observaciones || null,
         total,
-        saldo: Math.max(0, total - anterior.totalPagado),
+        saldo: saldoDe(total, anterior.totalPagado),
       },
     });
 
@@ -330,8 +353,8 @@ router.patch("/detalle/:detalleId/faltante", async (req, res) => {
     await tx.pedido.update({
       where: { id: detalle.pedidoId },
       data: {
-        total: pedido.total - diferencia,
-        saldo: Math.max(0, pedido.saldo - diferencia),
+        total: r2(pedido.total - diferencia),
+        saldo: saldoDe(pedido.total - diferencia, pedido.totalPagado),
       },
     });
 
@@ -355,8 +378,8 @@ router.delete("/detalle/:detalleId", async (req, res) => {
     await tx.pedido.update({
       where: { id: detalle.pedidoId },
       data: {
-        total: pedido.total - detalle.subtotal,
-        saldo: Math.max(0, pedido.saldo - detalle.subtotal),
+        total: r2(pedido.total - detalle.subtotal),
+        saldo: saldoDe(pedido.total - detalle.subtotal, pedido.totalPagado),
       },
     });
 

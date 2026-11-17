@@ -23,6 +23,7 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
     email:      cliente?.email      || "",
     tipo:       cliente?.tipo       || "",
     vendedorId: cliente?.vendedorId || "",
+    descuentoGeneral: cliente?.descuentoGeneral ?? 0,
   });
   const [comisiones, setComisiones] = useState(() => Object.fromEntries(
     (cliente?.comisionesVendedores || []).map(c => [String(c.vendedorId), c.porcentaje])
@@ -36,6 +37,7 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
       const data = {
         ...form,
         vendedorId: form.vendedorId ? Number(form.vendedorId) : null,
+        descuentoGeneral: Number(form.descuentoGeneral || 0),
         comisiones: Object.entries(comisiones).map(([vendedorId, porcentaje]) => ({
           vendedorId: Number(vendedorId),
           porcentaje: Number(porcentaje || 0),
@@ -97,6 +99,12 @@ function ModalCliente({ cliente, vendedores, onClose, onGuardado }) {
                 <option value="">— Sin vendedor —</option>
                 {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
               </select>
+            </div>
+          </div>
+          <div style={row}>
+            <div>
+              <label style={labelStyle}>Descuento general (%)</label>
+              <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={form.descuentoGeneral} onChange={set("descuentoGeneral")} />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>

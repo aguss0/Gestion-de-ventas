@@ -1,0 +1,137 @@
+- generic [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic [ref=f1e6]: 🏢 Sistema Ventas
+      - button "◂" [ref=f1e7] [cursor=pointer]
+    - navigation [ref=f1e8]:
+      - generic [ref=f1e9] [cursor=pointer]:
+        - generic [ref=f1e10]: ↗
+        - generic [ref=f1e11]: Tienda Online
+      - generic [ref=f1e12] [cursor=pointer]:
+        - generic [ref=f1e13]: 🧾
+        - generic [ref=f1e14]: Pedidos
+      - generic [ref=f1e15] [cursor=pointer]:
+        - generic [ref=f1e16]: 💰
+        - generic [ref=f1e17]: Estado de cuenta
+      - generic [ref=f1e18] [cursor=pointer]:
+        - generic [ref=f1e19]: 💳
+        - generic [ref=f1e20]: Pagos
+      - generic [ref=f1e21] [cursor=pointer]:
+        - generic [ref=f1e22]: 📊
+        - generic [ref=f1e23]: Comisiones
+      - generic [ref=f1e24] [cursor=pointer]:
+        - generic [ref=f1e25]: 👥
+        - generic [ref=f1e26]: Clientes
+      - generic [ref=f1e27] [cursor=pointer]:
+        - generic [ref=f1e28]: 📦
+        - generic [ref=f1e29]: Laurens
+      - generic [ref=f1e30] [cursor=pointer]:
+        - generic [ref=f1e31]: 🥤
+        - generic [ref=f1e32]: Descartables
+      - generic [ref=f1e33] [cursor=pointer]:
+        - generic [ref=f1e34]: 📋
+        - generic [ref=f1e35]: MF
+      - generic [ref=f1e36] [cursor=pointer]:
+        - generic [ref=f1e37]: 🌿
+        - generic [ref=f1e38]: Dietética
+      - generic [ref=f1e39] [cursor=pointer]:
+        - generic [ref=f1e40]: 🗂️
+        - generic [ref=f1e41]: Listas de precios
+      - generic [ref=f1e42] [cursor=pointer]:
+        - generic [ref=f1e43]: 🤝
+        - generic [ref=f1e44]: Vendedores
+  - generic [ref=f1e45]:
+    - generic [ref=f1e46]: Nuevo pedido
+    - generic [ref=f1e49]:
+      - generic [ref=f1e50]:
+        - generic [ref=f1e51]: Datos del pedido
+        - generic [ref=f1e52]:
+          - generic [ref=f1e53]:
+            - generic [ref=f1e54]: Cliente *
+            - textbox "Autoservicio Casonas de Norte" [ref=f1e136]
+          - generic [ref=f1e57]:
+            - generic [ref=f1e58]: Vendedor
+            - combobox [ref=f1e59]:
+              - option "— Sin vendedor —"
+              - option "Agus"
+              - option "Gerardo"
+              - option "Miguel"
+              - option "Turko" [selected]
+          - generic [ref=f1e60]:
+            - generic [ref=f1e61]: N° Orden
+            - spinbutton "Automático" [ref=f1e62]
+          - generic [ref=f1e63]:
+            - generic [ref=f1e64]: Fecha
+            - textbox [ref=f1e65]: 2026-11-17
+        - generic [ref=f1e66]:
+          - generic [ref=f1e67]: Observaciones del pedido
+          - textbox "Opcional…" [ref=f1e68]
+      - generic [ref=f1e69]:
+        - generic [ref=f1e70]:
+          - generic [ref=f1e71]: Agregar artículo
+          - combobox "Catálogo de artículos" [ref=f1e72]:
+            - option "Laurens" [selected]
+            - option "Descartables"
+            - option "MF"
+            - option "Dietética"
+        - generic [ref=f1e73]:
+          - generic [ref=f1e74]:
+            - generic [ref=f1e75]:
+              - generic [ref=f1e76]: Artículo *
+              - textbox "Buscar artículo..." [ref=f1e78]
+            - generic [ref=f1e79]:
+              - generic [ref=f1e80]: Cantidad
+              - spinbutton "0" [ref=f1e81]
+            - generic [ref=f1e82]:
+              - generic [ref=f1e83]: Precio
+              - textbox "Automático" [ref=f1e84]
+            - generic [ref=f1e85]:
+              - generic [ref=f1e86]: Descuento %
+              - spinbutton "0" [ref=f1e87]
+            - button "+ Agregar" [active] [ref=f1e88] [cursor=pointer]
+          - generic [ref=f1e89]:
+            - generic [ref=f1e90]: Observaciones del artículo
+            - textbox "Opcional…" [ref=f1e91]
+      - generic [ref=f1e318]:
+        - generic [ref=f1e319]: Detalle del pedido
+        - table [ref=f1e320]:
+          - rowgroup [ref=f1e321]:
+            - row [ref=f1e322]:
+              - columnheader "Artículo" [ref=f1e323]
+              - columnheader "Caja" [ref=f1e324]
+              - columnheader "Cantidad" [ref=f1e325]
+              - columnheader "Faltante" [ref=f1e326]
+              - columnheader "Precio unit." [ref=f1e327]
+              - columnheader "Subtotal" [ref=f1e328]
+              - columnheader [ref=f1e329]
+          - rowgroup [ref=f1e330]:
+            - row [ref=f1e331]:
+              - cell "ALMOHADITAS CHOC-FRUTILLA X 800" [ref=f1e332]:
+                - textbox "Observación opcional" [ref=f1e334]
+              - cell "10 UNID" [ref=f1e335]
+              - cell "− 1 +" [ref=f1e336]:
+                - generic [ref=f1e337]:
+                  - button "−" [ref=f1e338] [cursor=pointer]
+                  - generic [ref=f1e339]: "1"
+                  - button "+" [ref=f1e340] [cursor=pointer]
+              - cell [ref=f1e341]:
+                - spinbutton [ref=f1e342]: "0"
+              - cell [ref=f1e343]:
+                - spinbutton [ref=f1e344]: "7316"
+              - cell "$7.316" [ref=f1e345]
+              - cell [ref=f1e346]:
+                - button "×" [ref=f1e347] [cursor=pointer]
+        - generic [ref=f1e348]:
+          - generic [ref=f1e349]:
+            - generic [ref=f1e350]: Descuento general %
+            - spinbutton "Descuento general %" [ref=f1e351]: "10"
+          - generic [ref=f1e352]: Queda guardado en el cliente para sus próximos pedidos.
+          - generic [ref=f1e353]:
+            - generic [ref=f1e354]: "Subtotal: $7.316"
+            - generic [ref=f1e355]:
+              - text: "Descuento (10%):"
+              - generic [ref=f1e356]: −$731,6
+          - generic [ref=f1e357]: "Total: $6.584,4"
+      - generic [ref=f1e92]:
+        - button "Cancelar" [ref=f1e93] [cursor=pointer]
+        - button "Confirmar pedido" [ref=f1e94] [cursor=pointer]

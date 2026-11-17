@@ -1,0 +1,292 @@
+- generic [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - generic [ref=f2e6]: 🏢 Sistema Ventas
+      - button "◂" [ref=f2e7] [cursor=pointer]
+    - navigation [ref=f2e8]:
+      - generic [ref=f2e9] [cursor=pointer]:
+        - generic [ref=f2e10]: ↗
+        - generic [ref=f2e11]: Tienda Online
+      - generic [ref=f2e12] [cursor=pointer]:
+        - generic [ref=f2e13]: 🧾
+        - generic [ref=f2e14]: Pedidos
+      - generic [ref=f2e15] [cursor=pointer]:
+        - generic [ref=f2e16]: 💰
+        - generic [ref=f2e17]: Estado de cuenta
+      - generic [ref=f2e18] [cursor=pointer]:
+        - generic [ref=f2e19]: 💳
+        - generic [ref=f2e20]: Pagos
+      - generic [ref=f2e21] [cursor=pointer]:
+        - generic [ref=f2e22]: 📊
+        - generic [ref=f2e23]: Comisiones
+      - generic [ref=f2e24] [cursor=pointer]:
+        - generic [ref=f2e25]: 👥
+        - generic [ref=f2e26]: Clientes
+      - generic [ref=f2e27] [cursor=pointer]:
+        - generic [ref=f2e28]: 📦
+        - generic [ref=f2e29]: Laurens
+      - generic [ref=f2e30] [cursor=pointer]:
+        - generic [ref=f2e31]: 🥤
+        - generic [ref=f2e32]: Descartables
+      - generic [ref=f2e33] [cursor=pointer]:
+        - generic [ref=f2e34]: 📋
+        - generic [ref=f2e35]: MF
+      - generic [ref=f2e36] [cursor=pointer]:
+        - generic [ref=f2e37]: 🌿
+        - generic [ref=f2e38]: Dietética
+      - generic [ref=f2e39] [cursor=pointer]:
+        - generic [ref=f2e40]: 🗂️
+        - generic [ref=f2e41]: Listas de precios
+      - generic [ref=f2e42] [cursor=pointer]:
+        - generic [ref=f2e43]: 🤝
+        - generic [ref=f2e44]: Vendedores
+  - generic [ref=f2e45]:
+    - generic [ref=f2e46]: Clientes
+    - generic [ref=f2e48]:
+      - generic [ref=f2e49]:
+        - textbox "Buscar por nombre…" [ref=f2e50]
+        - combobox [ref=f2e51]:
+          - option "Todos los vendedores" [selected]
+          - option "Agus"
+          - option "Gerardo"
+          - option "Miguel"
+          - option "Turko"
+        - combobox [ref=f2e52]:
+          - option "Todos los tipos" [selected]
+          - option "Mayorista"
+          - option "Minorista"
+          - option "Distribuidor"
+          - option "Supermercado"
+        - button "+ Nuevo cliente" [ref=f2e53] [cursor=pointer]
+      - table [ref=f2e55]:
+        - rowgroup [ref=f2e56]:
+          - row [ref=f2e57]:
+            - columnheader [ref=f2e58]
+            - columnheader "Cliente" [ref=f2e59]
+            - columnheader "CUIT" [ref=f2e60]
+            - columnheader "Dirección" [ref=f2e61]
+            - columnheader "Teléfono" [ref=f2e62]
+            - columnheader "Email" [ref=f2e63]
+            - columnheader "Vendedor" [ref=f2e64]
+            - columnheader "Comisiones" [ref=f2e65]
+            - columnheader "Última compra" [ref=f2e66]
+            - columnheader "Total comprado" [ref=f2e67]
+            - columnheader "Estado" [ref=f2e68]
+            - columnheader "Acciones" [ref=f2e69]
+        - rowgroup [ref=f2e70]:
+          - row [ref=f2e245] [cursor=pointer]:
+            - cell "▾" [ref=f2e246]
+            - cell "Autoservicio Casonas de Norte" [ref=f2e73]
+            - cell "30-71668567-1" [ref=f2e75]
+            - cell "—" [ref=f2e76]
+            - cell "—" [ref=f2e77]
+            - cell "casonas@mail.com" [ref=f2e78]
+            - cell "Turko" [ref=f2e79]
+            - 'cell "Miguel: 6% · Turko: 4%" [ref=f2e80]'
+            - cell "17/11/2026" [ref=f2e247]
+            - cell "$78.732,8" [ref=f2e248]
+            - cell "Activo" [ref=f2e83]
+            - cell [ref=f2e84]:
+              - generic [ref=f2e85]:
+                - button "Editar" [ref=f2e86]
+                - button "Desactivar" [ref=f2e87]
+          - row [ref=f2e249]:
+            - cell "Total pedidos 3 Total comprado $78.732,8 Ticket promedio $26.244,267 Primera compra 4/7/2026 Última compra 17/11/2026 Días desde última 0 días Meses activo 5 meses Frecuencia promedio c/ 68 días Top 5 productos más comprados 1 PAPAS CLASICAS X 80 30 u $36.300 2 ALMOHADITAS CHOC-FRUTILLA X 800 6 u $42.432,8 Compras por mes jul 2026 $36.300 ago 2026 $29.264 nov 2026 $13.168,8" [ref=f2e250]:
+              - generic [ref=f2e251]:
+                - generic [ref=f2e252]:
+                  - generic [ref=f2e253]:
+                    - generic [ref=f2e254]: Total pedidos
+                    - generic [ref=f2e255]: "3"
+                  - generic [ref=f2e256]:
+                    - generic [ref=f2e257]: Total comprado
+                    - generic [ref=f2e258]: $78.732,8
+                  - generic [ref=f2e259]:
+                    - generic [ref=f2e260]: Ticket promedio
+                    - generic [ref=f2e261]: $26.244,267
+                  - generic [ref=f2e262]:
+                    - generic [ref=f2e263]: Primera compra
+                    - generic [ref=f2e264]: 4/7/2026
+                  - generic [ref=f2e265]:
+                    - generic [ref=f2e266]: Última compra
+                    - generic [ref=f2e267]: 17/11/2026
+                  - generic [ref=f2e268]:
+                    - generic [ref=f2e269]: Días desde última
+                    - generic [ref=f2e270]: 0 días
+                  - generic [ref=f2e271]:
+                    - generic [ref=f2e272]: Meses activo
+                    - generic [ref=f2e273]: 5 meses
+                  - generic [ref=f2e274]:
+                    - generic [ref=f2e275]: Frecuencia promedio
+                    - generic [ref=f2e276]: c/ 68 días
+                - generic [ref=f2e277]:
+                  - generic [ref=f2e278]:
+                    - generic [ref=f2e279]: Top 5 productos más comprados
+                    - generic [ref=f2e280]:
+                      - generic [ref=f2e281]: "1"
+                      - generic [ref=f2e282]: PAPAS CLASICAS X 80
+                      - generic [ref=f2e283]: 30 u
+                      - generic [ref=f2e284]: $36.300
+                    - generic [ref=f2e285]:
+                      - generic [ref=f2e286]: "2"
+                      - generic [ref=f2e287]: ALMOHADITAS CHOC-FRUTILLA X 800
+                      - generic [ref=f2e288]: 6 u
+                      - generic [ref=f2e289]: $42.432,8
+                  - generic [ref=f2e290]:
+                    - generic [ref=f2e291]: Compras por mes
+                    - generic [ref=f2e292]:
+                      - generic [ref=f2e293]: jul 2026
+                      - generic [ref=f2e296]: $36.300
+                    - generic [ref=f2e297]:
+                      - generic [ref=f2e298]: ago 2026
+                      - generic [ref=f2e301]: $29.264
+                    - generic [ref=f2e302]:
+                      - generic [ref=f2e303]: nov 2026
+                      - generic [ref=f2e306]: $13.168,8
+          - row [ref=f2e88] [cursor=pointer]:
+            - cell "▸" [ref=f2e89]
+            - cell "Dietetica Nva Cba" [ref=f2e90]
+            - cell "—" [ref=f2e92]
+            - cell "—" [ref=f2e93]
+            - cell "—" [ref=f2e94]
+            - cell "dieteticaNvaCba@mail.com" [ref=f2e95]
+            - cell "Miguel" [ref=f2e96]
+            - 'cell "Miguel: 10%" [ref=f2e97]'
+            - cell "—" [ref=f2e98]
+            - cell "—" [ref=f2e99]
+            - cell "Activo" [ref=f2e100]
+            - cell [ref=f2e101]:
+              - generic [ref=f2e102]:
+                - button "Editar" [ref=f2e103]
+                - button "Desactivar" [ref=f2e104]
+          - row [ref=f2e105] [cursor=pointer]:
+            - cell "▸" [ref=f2e106]
+            - cell "Distribuidora Masi S.A." [ref=f2e107]
+            - cell "30712232257" [ref=f2e109]
+            - cell "Pasaje 2 de Abril 92 San Guillermo" [ref=f2e110]:
+              - generic [ref=f2e111]: Pasaje 2 de Abril 92
+              - generic [ref=f2e112]: San Guillermo
+            - cell "—" [ref=f2e113]
+            - cell "masi@mail.com" [ref=f2e114]
+            - cell "Turko" [ref=f2e115]
+            - 'cell "Miguel: 6% · Turko: 4%" [ref=f2e116]'
+            - cell "—" [ref=f2e117]
+            - cell "—" [ref=f2e118]
+            - cell "Activo" [ref=f2e119]
+            - cell [ref=f2e120]:
+              - generic [ref=f2e121]:
+                - button "Editar" [ref=f2e122]
+                - button "Desactivar" [ref=f2e123]
+          - row [ref=f2e124] [cursor=pointer]:
+            - cell "▸" [ref=f2e125]
+            - cell "Distribuidora San Guillermo" [ref=f2e126]
+            - cell "—" [ref=f2e128]
+            - cell "—" [ref=f2e129]
+            - cell "—" [ref=f2e130]
+            - cell "sanGuillermo@mail.com" [ref=f2e131]
+            - cell "Turko" [ref=f2e132]
+            - 'cell "Miguel: 6% · Turko: 4%" [ref=f2e133]'
+            - cell "—" [ref=f2e134]
+            - cell "—" [ref=f2e135]
+            - cell "Activo" [ref=f2e136]
+            - cell [ref=f2e137]:
+              - generic [ref=f2e138]:
+                - button "Editar" [ref=f2e139]
+                - button "Desactivar" [ref=f2e140]
+          - row [ref=f2e141] [cursor=pointer]:
+            - cell "▸" [ref=f2e142]
+            - cell "Establecimiento Feli S.A." [ref=f2e143]
+            - cell "—" [ref=f2e145]
+            - cell "Republica de Israel 66" [ref=f2e146]
+            - cell "—" [ref=f2e148]
+            - cell "feli@mail.com" [ref=f2e149]
+            - cell "Gerardo" [ref=f2e150]
+            - 'cell "Gerardo: 4% · Miguel: 6%" [ref=f2e151]'
+            - cell "—" [ref=f2e152]
+            - cell "—" [ref=f2e153]
+            - cell "Activo" [ref=f2e154]
+            - cell [ref=f2e155]:
+              - generic [ref=f2e156]:
+                - button "Editar" [ref=f2e157]
+                - button "Desactivar" [ref=f2e158]
+          - row [ref=f2e159] [cursor=pointer]:
+            - cell "▸" [ref=f2e160]
+            - cell "GDA" [ref=f2e161]
+            - cell "—" [ref=f2e163]
+            - cell "—" [ref=f2e164]
+            - cell "—" [ref=f2e165]
+            - cell "gda@mail.com" [ref=f2e166]
+            - cell "Gerardo" [ref=f2e167]
+            - 'cell "Gerardo: 4% · Miguel: 6%" [ref=f2e168]'
+            - cell "—" [ref=f2e169]
+            - cell "—" [ref=f2e170]
+            - cell "Activo" [ref=f2e171]
+            - cell [ref=f2e172]:
+              - generic [ref=f2e173]:
+                - button "Editar" [ref=f2e174]
+                - button "Desactivar" [ref=f2e175]
+          - row [ref=f2e176] [cursor=pointer]:
+            - cell "▸" [ref=f2e177]
+            - cell "Grandiet Mayorista" [ref=f2e178]:
+              - generic [ref=f2e179]: Grandiet
+              - generic [ref=f2e180]: Mayorista
+            - cell "—" [ref=f2e181]
+            - cell "—" [ref=f2e182]
+            - cell "—" [ref=f2e183]
+            - cell "—" [ref=f2e184]
+            - cell "Miguel" [ref=f2e185]
+            - 'cell "Miguel: 10%" [ref=f2e186]'
+            - cell "—" [ref=f2e187]
+            - cell "—" [ref=f2e188]
+            - cell "Activo" [ref=f2e189]
+            - cell [ref=f2e190]:
+              - generic [ref=f2e191]:
+                - button "Editar" [ref=f2e192]
+                - button "Desactivar" [ref=f2e193]
+          - row [ref=f2e194] [cursor=pointer]:
+            - cell "▸" [ref=f2e195]
+            - cell "La Queseria" [ref=f2e196]
+            - cell "—" [ref=f2e198]
+            - cell "—" [ref=f2e199]
+            - cell "—" [ref=f2e200]
+            - cell "laQueseria@mail.com" [ref=f2e201]
+            - cell "Turko" [ref=f2e202]
+            - 'cell "Miguel: 6% · Turko: 4%" [ref=f2e203]'
+            - cell "—" [ref=f2e204]
+            - cell "—" [ref=f2e205]
+            - cell "Activo" [ref=f2e206]
+            - cell [ref=f2e207]:
+              - generic [ref=f2e208]:
+                - button "Editar" [ref=f2e209]
+                - button "Desactivar" [ref=f2e210]
+          - row [ref=f2e211] [cursor=pointer]:
+            - cell "▸" [ref=f2e212]
+            - cell "Mariel - Cole Peña" [ref=f2e213]
+            - cell "—" [ref=f2e215]
+            - cell "—" [ref=f2e216]
+            - cell "—" [ref=f2e217]
+            - cell "mariel@mail.com" [ref=f2e218]
+            - cell "Miguel" [ref=f2e219]
+            - 'cell "Miguel: 10%" [ref=f2e220]'
+            - cell "—" [ref=f2e221]
+            - cell "—" [ref=f2e222]
+            - cell "Activo" [ref=f2e223]
+            - cell [ref=f2e224]:
+              - generic [ref=f2e225]:
+                - button "Editar" [ref=f2e226]
+                - button "Desactivar" [ref=f2e227]
+          - row [ref=f2e228] [cursor=pointer]:
+            - cell "▸" [ref=f2e229]
+            - cell "Verde Limon - Urca" [ref=f2e230]
+            - cell "—" [ref=f2e232]
+            - cell "—" [ref=f2e233]
+            - cell "—" [ref=f2e234]
+            - cell "verdeLimon@mail.com" [ref=f2e235]
+            - cell "Miguel" [ref=f2e236]
+            - 'cell "Miguel: 10%" [ref=f2e237]'
+            - cell "—" [ref=f2e238]
+            - cell "—" [ref=f2e239]
+            - cell "Activo" [ref=f2e240]
+            - cell [ref=f2e241]:
+              - generic [ref=f2e242]:
+                - button "Editar" [ref=f2e243]
+                - button "Desactivar" [ref=f2e244]

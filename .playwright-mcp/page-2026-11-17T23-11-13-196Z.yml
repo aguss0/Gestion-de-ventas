@@ -1,0 +1,363 @@
+- generic [ref=f2e2]:
+  - generic [ref=f2e555]:
+    - complementary [ref=f2e556]:
+      - generic [ref=f2e557]:
+        - generic [ref=f2e558]: 🏢 Sistema Ventas
+        - button "◂" [ref=f2e559] [cursor=pointer]
+      - navigation [ref=f2e560]:
+        - generic [ref=f2e561] [cursor=pointer]:
+          - generic [ref=f2e562]: ↗
+          - generic [ref=f2e563]: Tienda Online
+        - generic [ref=f2e564] [cursor=pointer]:
+          - generic [ref=f2e565]: 🧾
+          - generic [ref=f2e566]: Pedidos
+        - generic [ref=f2e567] [cursor=pointer]:
+          - generic [ref=f2e568]: 💰
+          - generic [ref=f2e569]: Estado de cuenta
+        - generic [ref=f2e570] [cursor=pointer]:
+          - generic [ref=f2e571]: 💳
+          - generic [ref=f2e572]: Pagos
+        - generic [ref=f2e573] [cursor=pointer]:
+          - generic [ref=f2e574]: 📊
+          - generic [ref=f2e575]: Comisiones
+        - generic [ref=f2e576] [cursor=pointer]:
+          - generic [ref=f2e577]: 👥
+          - generic [ref=f2e578]: Clientes
+        - generic [ref=f2e579] [cursor=pointer]:
+          - generic [ref=f2e580]: 📦
+          - generic [ref=f2e581]: Laurens
+        - generic [ref=f2e582] [cursor=pointer]:
+          - generic [ref=f2e583]: 🥤
+          - generic [ref=f2e584]: Descartables
+        - generic [ref=f2e585] [cursor=pointer]:
+          - generic [ref=f2e586]: 📋
+          - generic [ref=f2e587]: MF
+        - generic [ref=f2e588] [cursor=pointer]:
+          - generic [ref=f2e589]: 🌿
+          - generic [ref=f2e590]: Dietética
+        - generic [ref=f2e591] [cursor=pointer]:
+          - generic [ref=f2e592]: 🗂️
+          - generic [ref=f2e593]: Listas de precios
+        - generic [ref=f2e594] [cursor=pointer]:
+          - generic [ref=f2e595]: 🤝
+          - generic [ref=f2e596]: Vendedores
+    - generic [ref=f2e597]:
+      - generic [ref=f2e598]:
+        - generic [ref=f2e599]: Pedidos
+        - button "+ Nuevo pedido" [ref=f2e601] [cursor=pointer]
+      - generic [ref=f2e602]:
+        - generic [ref=f2e604] [cursor=pointer]:
+          - checkbox "Solo pedidos con productos de stock" [ref=f2e605]
+          - text: Solo pedidos con productos de stock
+        - table [ref=f2e607]:
+          - rowgroup [ref=f2e608]:
+            - row [ref=f2e609]:
+              - columnheader "N° Orden ↓" [ref=f2e610] [cursor=pointer]
+              - columnheader "Fecha ↕" [ref=f2e611] [cursor=pointer]
+              - columnheader "Cliente ↕" [ref=f2e612] [cursor=pointer]
+              - columnheader "Vendedor ↕" [ref=f2e613] [cursor=pointer]
+              - columnheader "Total" [ref=f2e614]
+              - columnheader "Pagado" [ref=f2e615]
+              - columnheader "Saldo" [ref=f2e616]
+              - columnheader "Acciones" [ref=f2e617]
+          - rowgroup [ref=f2e618]:
+            - row [ref=f2e619]:
+              - cell "#29" [ref=f2e620]
+              - cell "17/11/2026" [ref=f2e621]
+              - cell "Autoservicio Casonas de Norte" [ref=f2e622]
+              - cell "Turko" [ref=f2e623]
+              - cell "$17.223,66" [ref=f2e624]
+              - cell "$0" [ref=f2e625]
+              - cell "$17.223,66" [ref=f2e626]
+              - cell [ref=f2e627]:
+                - generic [ref=f2e628]:
+                  - button "Ver" [ref=f2e629] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e630] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e631] [cursor=pointer]
+            - row [ref=f2e632]:
+              - cell "#28" [ref=f2e633]
+              - cell "17/11/2026" [ref=f2e634]
+              - cell "Dietetica Nva Cba" [ref=f2e635]
+              - cell "Miguel" [ref=f2e636]
+              - cell "$25.502,75" [ref=f2e637]
+              - cell "$0" [ref=f2e638]
+              - cell "$25.502,75" [ref=f2e639]
+              - cell [ref=f2e640]:
+                - generic [ref=f2e641]:
+                  - button "Ver" [ref=f2e642] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e643] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e644] [cursor=pointer]
+            - row [ref=f2e645]:
+              - cell "#27" [ref=f2e646]
+              - cell "24/09/2026" [ref=f2e647]
+              - cell "Dietetica Nva Cba" [ref=f2e648]
+              - cell "Miguel" [ref=f2e649]
+              - cell "$5.000.000" [ref=f2e650]
+              - cell "$1.750.000" [ref=f2e651]
+              - cell "$3.250.000" [ref=f2e652]
+              - cell [ref=f2e653]:
+                - generic [ref=f2e654]:
+                  - button "Ver" [ref=f2e655] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e656] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e657] [cursor=pointer]
+            - row [ref=f2e658]:
+              - cell "#26" [ref=f2e659]
+              - cell "02/09/2026" [ref=f2e660]
+              - cell "Distribuidora San Guillermo" [ref=f2e661]
+              - cell "Turko" [ref=f2e662]
+              - cell "$226.880" [ref=f2e663]
+              - cell "$0" [ref=f2e664]
+              - cell "$226.880" [ref=f2e665]
+              - cell [ref=f2e666]:
+                - generic [ref=f2e667]:
+                  - button "Ver" [ref=f2e668] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e669] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e670] [cursor=pointer]
+            - row [ref=f2e671]:
+              - cell "#24" [ref=f2e672]
+              - cell "18/08/2026" [ref=f2e673]
+              - cell "Dietetica Nva Cba" [ref=f2e674]
+              - cell "Miguel" [ref=f2e675]
+              - cell "$29.264" [ref=f2e676]
+              - cell "$0" [ref=f2e677]
+              - cell "$29.264" [ref=f2e678]
+              - cell [ref=f2e679]:
+                - generic [ref=f2e680]:
+                  - button "Ver" [ref=f2e681] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e682] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e683] [cursor=pointer]
+            - row [ref=f2e684]:
+              - cell "#23" [ref=f2e685]
+              - cell "18/08/2026" [ref=f2e686]
+              - cell "Autoservicio Casonas de Norte" [ref=f2e687]
+              - cell "Turko" [ref=f2e688]
+              - cell "$29.264" [ref=f2e689]
+              - cell "$0" [ref=f2e690]
+              - cell "$29.264" [ref=f2e691]
+              - cell [ref=f2e692]:
+                - generic [ref=f2e693]:
+                  - button "Ver" [ref=f2e694] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e695] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e696] [cursor=pointer]
+            - row [ref=f2e697]:
+              - cell "#21" [ref=f2e698]
+              - cell "27/07/2026" [ref=f2e699]
+              - cell "Establecimiento Feli S.A." [ref=f2e700]
+              - cell "Gerardo" [ref=f2e701]
+              - cell "$359.696" [ref=f2e702]
+              - cell "$0" [ref=f2e703]
+              - cell "$359.696" [ref=f2e704]
+              - cell [ref=f2e705]:
+                - generic [ref=f2e706]:
+                  - button "Ver" [ref=f2e707] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e708] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e709] [cursor=pointer]
+            - row [ref=f2e710]:
+              - cell "#20" [ref=f2e711]
+              - cell "23/07/2026" [ref=f2e712]
+              - cell "La Queseria" [ref=f2e713]
+              - cell "Turko" [ref=f2e714]
+              - cell "$87.700" [ref=f2e715]
+              - cell "$216" [ref=f2e716]
+              - cell "$87.484" [ref=f2e717]
+              - cell [ref=f2e718]:
+                - generic [ref=f2e719]:
+                  - button "Ver" [ref=f2e720] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e721] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e722] [cursor=pointer]
+            - row [ref=f2e723]:
+              - cell "#19" [ref=f2e724]
+              - cell "21/07/2026" [ref=f2e725]
+              - cell "La Queseria" [ref=f2e726]
+              - cell "Turko" [ref=f2e727]
+              - cell "$227.784" [ref=f2e728]
+              - cell "$227.784" [ref=f2e729]
+              - cell "$0" [ref=f2e730]
+              - cell [ref=f2e731]:
+                - generic [ref=f2e732]:
+                  - button "Ver" [ref=f2e733] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e734] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e735] [cursor=pointer]
+            - row [ref=f2e736]:
+              - cell "#18" [ref=f2e737]
+              - cell "21/07/2026" [ref=f2e738]
+              - cell "Establecimiento Feli S.A." [ref=f2e739]
+              - cell "Gerardo" [ref=f2e740]
+              - cell "$306.352" [ref=f2e741]
+              - cell "$306.352" [ref=f2e742]
+              - cell "$0" [ref=f2e743]
+              - cell [ref=f2e744]:
+                - generic [ref=f2e745]:
+                  - button "Ver" [ref=f2e746] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e747] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e748] [cursor=pointer]
+            - row [ref=f2e749]:
+              - cell "#17" [ref=f2e750]
+              - cell "15/07/2026" [ref=f2e751]
+              - cell "Establecimiento Feli S.A." [ref=f2e752]
+              - cell "Gerardo" [ref=f2e753]
+              - cell "$134.386" [ref=f2e754]
+              - cell "$134.386" [ref=f2e755]
+              - cell "$0" [ref=f2e756]
+              - cell [ref=f2e757]:
+                - generic [ref=f2e758]:
+                  - button "Ver" [ref=f2e759] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e760] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e761] [cursor=pointer]
+            - row [ref=f2e762]:
+              - cell "#16" [ref=f2e763]
+              - cell "13/07/2026" [ref=f2e764]
+              - cell "GDA" [ref=f2e765]
+              - cell "Gerardo" [ref=f2e766]
+              - cell "$431.070" [ref=f2e767]
+              - cell "$431.070" [ref=f2e768]
+              - cell "$0" [ref=f2e769]
+              - cell [ref=f2e770]:
+                - generic [ref=f2e771]:
+                  - button "Ver" [ref=f2e772] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e773] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e774] [cursor=pointer]
+            - row [ref=f2e775]:
+              - cell "#15" [ref=f2e776]
+              - cell "08/07/2026" [ref=f2e777]
+              - cell "Dietetica Nva Cba" [ref=f2e778]
+              - cell "Miguel" [ref=f2e779]
+              - cell "$69.718" [ref=f2e780]
+              - cell "$69.718" [ref=f2e781]
+              - cell "$0" [ref=f2e782]
+              - cell [ref=f2e783]:
+                - generic [ref=f2e784]:
+                  - button "Ver" [ref=f2e785] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e786] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e787] [cursor=pointer]
+            - row [ref=f2e788]:
+              - cell "#14" [ref=f2e789]
+              - cell "06/07/2026" [ref=f2e790]
+              - cell "Establecimiento Feli S.A." [ref=f2e791]
+              - cell "Gerardo" [ref=f2e792]
+              - cell "$259.398" [ref=f2e793]
+              - cell "$259.398" [ref=f2e794]
+              - cell "$0" [ref=f2e795]
+              - cell [ref=f2e796]:
+                - generic [ref=f2e797]:
+                  - button "Ver" [ref=f2e798] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e799] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e800] [cursor=pointer]
+            - row [ref=f2e801]:
+              - cell "#13" [ref=f2e802]
+              - cell "05/07/2026" [ref=f2e803]
+              - cell "Autoservicio Casonas de Norte" [ref=f2e804]
+              - cell "Turko" [ref=f2e805]
+              - cell "$36.300" [ref=f2e806]
+              - cell "$36.300" [ref=f2e807]
+              - cell "$0" [ref=f2e808]
+              - cell [ref=f2e809]:
+                - generic [ref=f2e810]:
+                  - button "Ver" [ref=f2e811] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e812] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e813] [cursor=pointer]
+            - row [ref=f2e814]:
+              - cell "#12" [ref=f2e815]
+              - cell "30/06/2026" [ref=f2e816]
+              - cell "La Queseria" [ref=f2e817]
+              - cell "Turko" [ref=f2e818]
+              - cell "$93.500" [ref=f2e819]
+              - cell "$93.500" [ref=f2e820]
+              - cell "$0" [ref=f2e821]
+              - cell [ref=f2e822]:
+                - generic [ref=f2e823]:
+                  - button "Ver" [ref=f2e824] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e825] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e826] [cursor=pointer]
+            - row [ref=f2e827]:
+              - cell "#11" [ref=f2e828]
+              - cell "11/06/2026" [ref=f2e829]
+              - cell "Distribuidora Masi S.A." [ref=f2e830]
+              - cell "Turko" [ref=f2e831]
+              - cell "$687.448" [ref=f2e832]
+              - cell "$687.480" [ref=f2e833]
+              - cell "$0" [ref=f2e834]
+              - cell [ref=f2e835]:
+                - generic [ref=f2e836]:
+                  - button "Ver" [ref=f2e837] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e838] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e839] [cursor=pointer]
+            - row [ref=f2e840]:
+              - cell "#7" [ref=f2e841]
+              - cell "19/05/2026" [ref=f2e842]
+              - cell "Distribuidora Masi S.A." [ref=f2e843]
+              - cell "Turko" [ref=f2e844]
+              - cell "$1.238.488" [ref=f2e845]
+              - cell "$1.303.884" [ref=f2e846]
+              - cell "$0" [ref=f2e847]
+              - cell [ref=f2e848]:
+                - generic [ref=f2e849]:
+                  - button "Ver" [ref=f2e850] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e851] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e852] [cursor=pointer]
+            - row [ref=f2e853]:
+              - cell "#5" [ref=f2e854]
+              - cell "02/05/2026" [ref=f2e855]
+              - cell "Distribuidora San Guillermo" [ref=f2e856]
+              - cell "Turko" [ref=f2e857]
+              - cell "$1.093.010" [ref=f2e858]
+              - cell "$1.155.950" [ref=f2e859]
+              - cell "$0" [ref=f2e860]
+              - cell [ref=f2e861]:
+                - generic [ref=f2e862]:
+                  - button "Ver" [ref=f2e863] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e864] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e865] [cursor=pointer]
+            - row [ref=f2e866]:
+              - cell "#4" [ref=f2e867]
+              - cell "28/04/2026" [ref=f2e868]
+              - cell "Mariel - Cole Peña" [ref=f2e869]
+              - cell "Miguel" [ref=f2e870]
+              - cell "$82.700" [ref=f2e871]
+              - cell "$82.700" [ref=f2e872]
+              - cell "$0" [ref=f2e873]
+              - cell [ref=f2e874]:
+                - generic [ref=f2e875]:
+                  - button "Ver" [ref=f2e876] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e877] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e878] [cursor=pointer]
+            - row [ref=f2e879]:
+              - cell "#3" [ref=f2e880]
+              - cell "07/04/2026" [ref=f2e881]
+              - cell "Verde Limon - Urca" [ref=f2e882]
+              - cell "Miguel" [ref=f2e883]
+              - cell "$13.470" [ref=f2e884]
+              - cell "$13.470" [ref=f2e885]
+              - cell "$0" [ref=f2e886]
+              - cell [ref=f2e887]:
+                - generic [ref=f2e888]:
+                  - button "Ver" [ref=f2e889] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e890] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e891] [cursor=pointer]
+            - row [ref=f2e892]:
+              - cell "#2" [ref=f2e893]
+              - cell "07/04/2026" [ref=f2e894]
+              - cell "Mariel - Cole Peña" [ref=f2e895]
+              - cell "Miguel" [ref=f2e896]
+              - cell "$15.436" [ref=f2e897]
+              - cell "$15.436" [ref=f2e898]
+              - cell "$0" [ref=f2e899]
+              - cell [ref=f2e900]:
+                - generic [ref=f2e901]:
+                  - button "Ver" [ref=f2e902] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e903] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e904] [cursor=pointer]
+            - row [ref=f2e905]:
+              - cell "#1" [ref=f2e906]
+              - cell "07/04/2026" [ref=f2e907]
+              - cell "La Queseria" [ref=f2e908]
+              - cell "Turko" [ref=f2e909]
+              - cell "$218.080" [ref=f2e910]
+              - cell "$218.080" [ref=f2e911]
+              - cell "$0" [ref=f2e912]
+              - cell [ref=f2e913]:
+                - generic [ref=f2e914]:
+                  - button "Ver" [ref=f2e915] [cursor=pointer]
+                  - button "Remito PDF" [ref=f2e916] [cursor=pointer]
+                  - button "Eliminar" [ref=f2e917] [cursor=pointer]
+  - status [ref=f2e923]: "Pedido #29 creado"

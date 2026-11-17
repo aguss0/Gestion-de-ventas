@@ -1,0 +1,125 @@
+- generic [ref=f4e2]:
+  - generic [ref=f4e95]:
+    - complementary [ref=f4e96]:
+      - generic [ref=f4e97]:
+        - generic [ref=f4e98]: 🏢 Sistema Ventas
+        - button "◂" [ref=f4e99] [cursor=pointer]
+      - navigation [ref=f4e100]:
+        - generic [ref=f4e101] [cursor=pointer]:
+          - generic [ref=f4e102]: ↗
+          - generic [ref=f4e103]: Tienda Online
+        - generic [ref=f4e104] [cursor=pointer]:
+          - generic [ref=f4e105]: 🧾
+          - generic [ref=f4e106]: Pedidos
+        - generic [ref=f4e107] [cursor=pointer]:
+          - generic [ref=f4e108]: 💰
+          - generic [ref=f4e109]: Estado de cuenta
+        - generic [ref=f4e110] [cursor=pointer]:
+          - generic [ref=f4e111]: 💳
+          - generic [ref=f4e112]: Pagos
+        - generic [ref=f4e113] [cursor=pointer]:
+          - generic [ref=f4e114]: 📊
+          - generic [ref=f4e115]: Comisiones
+        - generic [ref=f4e116] [cursor=pointer]:
+          - generic [ref=f4e117]: 👥
+          - generic [ref=f4e118]: Clientes
+        - generic [ref=f4e119] [cursor=pointer]:
+          - generic [ref=f4e120]: 📦
+          - generic [ref=f4e121]: Laurens
+        - generic [ref=f4e122] [cursor=pointer]:
+          - generic [ref=f4e123]: 🥤
+          - generic [ref=f4e124]: Descartables
+        - generic [ref=f4e125] [cursor=pointer]:
+          - generic [ref=f4e126]: 📋
+          - generic [ref=f4e127]: MF
+        - generic [ref=f4e128] [cursor=pointer]:
+          - generic [ref=f4e129]: 🌿
+          - generic [ref=f4e130]: Dietética
+        - generic [ref=f4e131] [cursor=pointer]:
+          - generic [ref=f4e132]: 🗂️
+          - generic [ref=f4e133]: Listas de precios
+        - generic [ref=f4e134] [cursor=pointer]:
+          - generic [ref=f4e135]: 🤝
+          - generic [ref=f4e136]: Vendedores
+    - generic [ref=f4e137]:
+      - generic [ref=f4e138]:
+        - generic [ref=f4e139]: "Pedido #29"
+        - generic [ref=f4e141]:
+          - button "Editar pedido" [ref=f4e142] [cursor=pointer]
+          - button "Descargar remito PDF" [ref=f4e143] [cursor=pointer]
+      - generic [ref=f4e145]:
+        - button "← Volver a pedidos" [ref=f4e146] [cursor=pointer]
+        - generic [ref=f4e147]:
+          - generic [ref=f4e148]: Información del pedido
+          - generic [ref=f4e149]:
+            - generic [ref=f4e150]:
+              - generic [ref=f4e151]: Cliente
+              - generic [ref=f4e152]: Autoservicio Casonas de Norte
+            - generic [ref=f4e153]:
+              - generic [ref=f4e154]: Vendedor
+              - generic [ref=f4e155]: Turko
+            - generic [ref=f4e156]:
+              - generic [ref=f4e157]: Fecha
+              - generic [ref=f4e158]: 17/11/2026
+            - generic [ref=f4e159]:
+              - generic [ref=f4e160]: Total
+              - generic [ref=f4e161]: $17.223,66
+            - generic [ref=f4e162]:
+              - generic [ref=f4e163]: Pagado
+              - generic [ref=f4e164]: $0
+            - generic [ref=f4e165]:
+              - generic [ref=f4e166]: Saldo
+              - generic [ref=f4e167]: $17.223,66
+          - generic [ref=f4e168]:
+            - generic [ref=f4e169]:
+              - text: "Descuento general:"
+              - strong [ref=f4e170]: 10%
+              - generic [ref=f4e171]: (−$1.913,74)
+            - generic [ref=f4e172]:
+              - text: "Descuentos por artículo:"
+              - strong [ref=f4e173]: −$731,6
+        - generic [ref=f4e174]:
+          - generic [ref=f4e175]: Artículos
+          - table [ref=f4e177]:
+            - rowgroup [ref=f4e178]:
+              - row [ref=f4e179]:
+                - columnheader "Artículo" [ref=f4e180]
+                - columnheader "Unid. x caja" [ref=f4e181]
+                - columnheader "Pedido" [ref=f4e182]
+                - columnheader "Faltante" [ref=f4e183]
+                - columnheader "Entregado" [ref=f4e184]
+                - columnheader "Precio unit." [ref=f4e185]
+                - columnheader "Subtotal" [ref=f4e186]
+                - columnheader "Acciones" [ref=f4e187]
+            - rowgroup [ref=f4e188]:
+              - row [ref=f4e189]:
+                - cell "ALMOHADITAS CHOC-FRUTILLA X 800" [ref=f4e190]
+                - cell "10 UNID" [ref=f4e191]
+                - cell "2" [ref=f4e192]
+                - cell "—" [ref=f4e193]
+                - cell "2" [ref=f4e194]
+                - cell "$6.255,18 $7.316 −5%" [ref=f4e195]:
+                  - text: $6.255,18
+                  - generic [ref=f4e196]:
+                    - text: $7.316
+                    - generic [ref=f4e197]: −5%
+                - cell "$12.510,36" [ref=f4e198]
+                - cell [ref=f4e199]:
+                  - generic [ref=f4e200]:
+                    - button "⚠ Faltante" [ref=f4e201] [cursor=pointer]
+                    - button "Eliminar" [ref=f4e202] [cursor=pointer]
+              - row [ref=f4e203]:
+                - cell "ARITOS CEBOLLA CREMA X 400" [ref=f4e204]
+                - cell "8 UNID" [ref=f4e205]
+                - cell "1" [ref=f4e206]
+                - cell "—" [ref=f4e207]
+                - cell "1" [ref=f4e208]
+                - cell "$4.713,3 $5.237" [ref=f4e209]:
+                  - text: $4.713,3
+                  - generic [ref=f4e210]: $5.237
+                - cell "$4.713,3" [ref=f4e211]
+                - cell [ref=f4e212]:
+                  - generic [ref=f4e213]:
+                    - button "⚠ Faltante" [ref=f4e214] [cursor=pointer]
+                    - button "Eliminar" [ref=f4e215] [cursor=pointer]
+  - status [ref=f4e221]: "Pedido #29 actualizado"

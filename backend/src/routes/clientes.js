@@ -9,6 +9,15 @@ function normalizarComisionPct(valor) {
   return porcentaje;
 }
 
+function normalizarDescuentoGeneral(valor) {
+  if (valor === undefined) return undefined;
+  const porcentaje = Number(valor || 0);
+  if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+    throw { status: 400, message: "El descuento general debe estar entre 0 y 100" };
+  }
+  return porcentaje;
+}
+
 function normalizarComisiones(comisiones) {
   if (!Array.isArray(comisiones)) return [];
   const vendedores = new Set();
@@ -51,6 +60,7 @@ router.post("/", async (req, res) => {
         barrio:     barrio     || null,
         tipo:       tipo       || null,
         vendedorId: vendedorId ? Number(vendedorId) : null,
+        descuentoGeneral: normalizarDescuentoGeneral(req.body.descuentoGeneral),
       },
     });
     if (comisiones.length) {
@@ -68,10 +78,11 @@ router.patch("/:id", async (req, res) => {
   const { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId, activo } = req.body;
   const clienteId = Number(req.params.id);
   const comisiones = req.body.comisiones === undefined ? null : normalizarComisiones(req.body.comisiones);
+  const descuentoGeneral = normalizarDescuentoGeneral(req.body.descuentoGeneral);
   const data = await prisma.$transaction(async tx => {
     await tx.cliente.update({
       where: { id: clienteId },
-      data:  { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId: vendedorId ? Number(vendedorId) : null, activo },
+      data:  { nombre, cuit, email, telefono, direccion, barrio, tipo, vendedorId: vendedorId ? Number(vendedorId) : null, activo, descuentoGeneral },
     });
     if (comisiones !== null) {
       await tx.clienteComision.deleteMany({ where: { clienteId } });

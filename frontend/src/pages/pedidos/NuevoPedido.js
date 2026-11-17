@@ -116,6 +116,8 @@ export function NuevoPedido() {
       precio: Number(d.precio),
       subtotal: Number(d.subtotal),
       observaciones: d.observaciones || "",
+      precioLista: d.precioLista,
+      descuentoPct: Number(d.descuentoPct || 0),
     })));
   }, [pedidoEditar]);
 
@@ -154,6 +156,8 @@ export function NuevoPedido() {
         precio:        precioConDescuento,
         subtotal:      precioConDescuento * Number(cantidad),
         observaciones: obsItem || null,
+        precioLista:   precioCustom ? Number(precioCustom) : precioArticulo,
+        descuentoPct:  precioCustom ? 0 : Number(descuento),
       }]);
     }
     setArticuloId(""); setCantidad(""); setPrecioCustom(""); setObsItem(""); setDescuento(0);
@@ -178,7 +182,8 @@ export function NuevoPedido() {
   const editarPrecio = (id, nuevo) => setItems(items.map(i => {
     if (i.articuloId !== id) return i;
     const precio = Math.max(0, Number(nuevo));
-    return { ...i, precio, subtotal: precio * (i.cantidad - (i.cantidadFaltante || 0)) };
+    // Un precio cargado a mano reemplaza el de lista y su descuento.
+    return { ...i, precio, precioLista: null, descuentoPct: 0, subtotal: precio * (i.cantidad - (i.cantidadFaltante || 0)) };
   }));
 
   const editarObsItem = (id, observaciones) => setItems(items.map(i =>
@@ -194,6 +199,7 @@ export function NuevoPedido() {
         fecha,
         items: itemsConDescuentoGeneral,
         observaciones: obs || undefined,
+        descuentoGeneral: esEdicion ? undefined : Number(descuentoGeneral),
       };
       return esEdicion ? pedidoService.editar(id, datos) : pedidoService.crear(datos);
     },
@@ -228,6 +234,7 @@ export function NuevoPedido() {
                   setClienteId(String(c.id));
                   if (c.vendedorId) setVendedorId(String(c.vendedorId));
                   else setVendedorId("");
+                  if (!esEdicion) setDescuentoGeneral(Number(c.descuentoGeneral || 0));
                 }}
                 renderValor={(c) => c.nombre}
                 renderOpcion={(c) => (
@@ -408,6 +415,7 @@ export function NuevoPedido() {
                       onChange={e => setDescuentoGeneral(Math.min(100, Math.max(0, Number(e.target.value))))}
                     />
                   </div>
+                  <div style={{ fontSize: 11, color: "var(--muted)" }}>Queda guardado en el cliente para sus próximos pedidos.</div>
                   {Number(descuentoGeneral) > 0 && (
                     <div style={{ fontSize: 13, color: "var(--muted)", textAlign: "right" }}>
                       <div>Subtotal: {fmt(subtotalItems)}</div>

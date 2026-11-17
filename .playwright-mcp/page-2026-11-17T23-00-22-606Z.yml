@@ -1,0 +1,234 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🏢 Sistema Ventas
+      - button "◂" [ref=e7] [cursor=pointer]
+    - navigation [ref=e8]:
+      - generic [ref=e9] [cursor=pointer]:
+        - generic [ref=e10]: ↗
+        - generic [ref=e11]: Tienda Online
+      - generic [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]: 🧾
+        - generic [ref=e14]: Pedidos
+      - generic [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: 💰
+        - generic [ref=e17]: Estado de cuenta
+      - generic [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: 💳
+        - generic [ref=e20]: Pagos
+      - generic [ref=e21] [cursor=pointer]:
+        - generic [ref=e22]: 📊
+        - generic [ref=e23]: Comisiones
+      - generic [ref=e24] [cursor=pointer]:
+        - generic [ref=e25]: 👥
+        - generic [ref=e26]: Clientes
+      - generic [ref=e27] [cursor=pointer]:
+        - generic [ref=e28]: 📦
+        - generic [ref=e29]: Laurens
+      - generic [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: 🥤
+        - generic [ref=e32]: Descartables
+      - generic [ref=e33] [cursor=pointer]:
+        - generic [ref=e34]: 📋
+        - generic [ref=e35]: MF
+      - generic [ref=e36] [cursor=pointer]:
+        - generic [ref=e37]: 🌿
+        - generic [ref=e38]: Dietética
+      - generic [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: 🗂️
+        - generic [ref=e41]: Listas de precios
+      - generic [ref=e42] [cursor=pointer]:
+        - generic [ref=e43]: 🤝
+        - generic [ref=e44]: Vendedores
+  - generic [ref=e45]:
+    - generic [ref=e46]: Nuevo pedido
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - generic [ref=e51]: Datos del pedido
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e54]: Cliente *
+            - textbox "Autoservicio Casonas de Norte" [ref=e136]
+          - generic [ref=e57]:
+            - generic [ref=e58]: Vendedor
+            - combobox [ref=e59]:
+              - option "— Sin vendedor —"
+              - option "Agus"
+              - option "Gerardo"
+              - option "Miguel"
+              - option "Turko" [selected]
+          - generic [ref=e60]:
+            - generic [ref=e61]: N° Orden
+            - spinbutton "Automático" [ref=e62]
+          - generic [ref=e63]:
+            - generic [ref=e64]: Fecha
+            - textbox [ref=e65]: 2026-11-17
+        - generic [ref=e66]:
+          - generic [ref=e67]: Observaciones del pedido
+          - textbox "Opcional…" [ref=e68]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: Agregar artículo
+          - combobox "Catálogo de artículos" [ref=e72]:
+            - option "Laurens" [selected]
+            - option "Descartables"
+            - option "MF"
+            - option "Dietética"
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - generic [ref=e76]: Artículo *
+              - generic [ref=e77]:
+                - textbox "Buscar artículo..." [active] [ref=e78]
+                - generic [ref=e137]:
+                  - generic [ref=e139] [cursor=pointer]:
+                    - generic [ref=e140]: ALMOHADITAS CHOC-FRUTILLA X 800
+                    - generic [ref=e141]: 10 UNID · $7.316
+                  - generic [ref=e143] [cursor=pointer]:
+                    - generic [ref=e144]: ARITOS CEBOLLA CREMA X 400
+                    - generic [ref=e145]: 8 UNID · $5.237
+                  - generic [ref=e147] [cursor=pointer]:
+                    - generic [ref=e148]: ARITOS DULCES X 700
+                    - generic [ref=e149]: $3.825
+                  - generic [ref=e151] [cursor=pointer]:
+                    - generic [ref=e152]: ARITOS FRUT X 2.5 KG
+                    - generic [ref=e153]: $18.330
+                  - generic [ref=e155] [cursor=pointer]:
+                    - generic [ref=e156]: BOL CHOCOL. X 2.50 KG
+                    - generic [ref=e157]: $20.888
+                  - generic [ref=e159] [cursor=pointer]:
+                    - generic [ref=e160]: BOLITAS X 700
+                    - generic [ref=e161]: 8 UNID · $3.825
+                  - generic [ref=e163] [cursor=pointer]:
+                    - generic [ref=e164]: CASCARON X 400
+                    - generic [ref=e165]: 8 UNID · $4.295
+                  - generic [ref=e167] [cursor=pointer]:
+                    - generic [ref=e168]: CHIZITOS X 160
+                    - generic [ref=e169]: 16 UNID · $1.277
+                  - generic [ref=e171] [cursor=pointer]:
+                    - generic [ref=e172]: CHIZITOS X 400
+                    - generic [ref=e173]: 10 UNID · $2.133
+                  - generic [ref=e175] [cursor=pointer]:
+                    - generic [ref=e176]: CHIZITOS X 700
+                    - generic [ref=e177]: 8 UNID · $3.487
+                  - generic [ref=e179] [cursor=pointer]:
+                    - generic [ref=e180]: CHIZITOS X 80
+                    - generic [ref=e181]: 30 UNID · $887
+                  - generic [ref=e183] [cursor=pointer]:
+                    - generic [ref=e184]: CONITOS X 160
+                    - generic [ref=e185]: 16 UNID · $2.567
+                  - generic [ref=e187] [cursor=pointer]:
+                    - generic [ref=e188]: CONITOS X 250
+                    - generic [ref=e189]: $4.006
+                  - generic [ref=e191] [cursor=pointer]:
+                    - generic [ref=e192]: CONITOS X 500
+                    - generic [ref=e193]: 8 UNID · $7.588
+                  - generic [ref=e195] [cursor=pointer]:
+                    - generic [ref=e196]: COPOS AZUCARADOS X 2.50 KG
+                    - generic [ref=e197]: $14.774
+                  - generic [ref=e199] [cursor=pointer]:
+                    - generic [ref=e200]: COPOS X 2.50 KG
+                    - generic [ref=e201]: $14.508
+                  - generic [ref=e203] [cursor=pointer]:
+                    - generic [ref=e204]: DULCITAS X 700
+                    - generic [ref=e205]: 8 UNID · $3.825
+                  - generic [ref=e207] [cursor=pointer]:
+                    - generic [ref=e208]: MANI PELADO X 1 KG
+                    - generic [ref=e209]: 25 UNID · $5.856
+                  - generic [ref=e211] [cursor=pointer]:
+                    - generic [ref=e212]: MANI PELADO X 200
+                    - generic [ref=e213]: 50 UNID · $1.764
+                  - generic [ref=e215] [cursor=pointer]:
+                    - generic [ref=e216]: MANI SALADO X 1 KG
+                    - generic [ref=e217]: 25 UNID · $5.369
+                  - generic [ref=e219] [cursor=pointer]:
+                    - generic [ref=e220]: MANI SALADO X 200
+                    - generic [ref=e221]: 50 UNID · $1.562
+                  - generic [ref=e223] [cursor=pointer]:
+                    - generic [ref=e224]: MANI SALADO X 500
+                    - generic [ref=e225]: 25 UNID · $3.018
+                  - generic [ref=e227] [cursor=pointer]:
+                    - generic [ref=e228]: MANI TOSTADO X 1 KG
+                    - generic [ref=e229]: $5.248
+                  - generic [ref=e231] [cursor=pointer]:
+                    - generic [ref=e232]: PALOS S X 100
+                    - generic [ref=e233]: 100 UNID · $798
+                  - generic [ref=e235] [cursor=pointer]:
+                    - generic [ref=e236]: PALOS S X 200
+                    - generic [ref=e237]: 50 UNID · $1.244
+                  - generic [ref=e239] [cursor=pointer]:
+                    - generic [ref=e240]: PALOS SALADOS X 1
+                    - generic [ref=e241]: 20 UNID · $4.062
+                  - generic [ref=e243] [cursor=pointer]:
+                    - generic [ref=e244]: PALOS SALADOS X 500
+                    - generic [ref=e245]: 25 UNID · $2.200
+                  - generic [ref=e247] [cursor=pointer]:
+                    - generic [ref=e248]: PAPAS CHEDDAR X 160
+                    - generic [ref=e249]: 16 UNID · $3.310
+                  - generic [ref=e251] [cursor=pointer]:
+                    - generic [ref=e252]: PAPAS CHEDDAR X 400
+                    - generic [ref=e253]: 10 UNID · $6.705
+                  - generic [ref=e255] [cursor=pointer]:
+                    - generic [ref=e256]: PAPAS CLASICAS X 160
+                    - generic [ref=e257]: 20 UNID · $2.864
+                  - generic [ref=e259] [cursor=pointer]:
+                    - generic [ref=e260]: PAPAS CLASICAS X 400
+                    - generic [ref=e261]: 10 UNID · $5.500
+                  - generic [ref=e263] [cursor=pointer]:
+                    - generic [ref=e264]: PAPAS CLASICAS X 80
+                    - generic [ref=e265]: 30 UNID · $1.639
+                  - generic [ref=e267] [cursor=pointer]:
+                    - generic [ref=e268]: PAPAS CLASICAS X 800
+                    - generic [ref=e269]: 8 UNID · $9.821
+                  - generic [ref=e271] [cursor=pointer]:
+                    - generic [ref=e272]: PAPAS JAMON SERR X 160
+                    - generic [ref=e273]: 16 UNID · $3.310
+                  - generic [ref=e275] [cursor=pointer]:
+                    - generic [ref=e276]: PAPAS JAMON SERR X 400
+                    - generic [ref=e277]: 10 UNID · $6.705
+                  - generic [ref=e279] [cursor=pointer]:
+                    - generic [ref=e280]: PAPAS PAY X 50
+                    - generic [ref=e281]: $621
+                  - generic [ref=e283] [cursor=pointer]:
+                    - generic [ref=e284]: PAPAS PAY X 400
+                    - generic [ref=e285]: 16 UNID · $5.689
+                  - generic [ref=e287] [cursor=pointer]:
+                    - generic [ref=e288]: PAPAS PAY X 800
+                    - generic [ref=e289]: 10 UNID · $11.250
+                  - generic [ref=e291] [cursor=pointer]:
+                    - generic [ref=e292]: PAPAS RUFFLES X 600
+                    - generic [ref=e293]: $7.736
+                  - generic [ref=e295] [cursor=pointer]:
+                    - generic [ref=e296]: PAPAS RUFFLES X 800
+                    - generic [ref=e297]: 8 UNID · $9.821
+                  - generic [ref=e299] [cursor=pointer]:
+                    - generic [ref=e300]: PIZZETAS P. X 700
+                    - generic [ref=e301]: $4.448
+                  - generic [ref=e303] [cursor=pointer]:
+                    - generic [ref=e304]: TRIANG. PIZA Y QUESO X 500
+                    - generic [ref=e305]: $3.380
+                  - generic [ref=e307] [cursor=pointer]:
+                    - generic [ref=e308]: TUTUCAS X 10 KG
+                    - generic [ref=e309]: $49.770
+                  - generic [ref=e311] [cursor=pointer]:
+                    - generic [ref=e312]: TUTUCAS X 5 KG
+                    - generic [ref=e313]: $24.890
+                  - generic [ref=e315] [cursor=pointer]:
+                    - generic [ref=e316]: TUTUCAS X 1 KG
+                    - generic [ref=e317]: $5.492
+            - generic [ref=e79]:
+              - generic [ref=e80]: Cantidad
+              - spinbutton "0" [ref=e81]
+            - generic [ref=e82]:
+              - generic [ref=e83]: Precio
+              - textbox "Automático" [ref=e84]
+            - generic [ref=e85]:
+              - generic [ref=e86]: Descuento %
+              - spinbutton "0" [ref=e87]
+            - button "+ Agregar" [ref=e88] [cursor=pointer]
+          - generic [ref=e89]:
+            - generic [ref=e90]: Observaciones del artículo
+            - textbox "Opcional…" [ref=e91]
+      - generic [ref=e92]:
+        - button "Cancelar" [ref=e93] [cursor=pointer]
+        - button "Confirmar pedido" [ref=e94] [cursor=pointer]

@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const prisma = require("../utils/prisma");
+const { r2, saldoDe } = require("../utils/dinero");
 
 // GET pagos (todos o por pedido)
 router.get("/", async (req, res) => {
@@ -19,29 +20,32 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: "Pedido, monto y método requeridos" });
   }
 
+  const montoTotal = r2(monto);
+  if (!(montoTotal > 0)) return res.status(400).json({ error: "Monto inválido" });
+
   const resultado = await prisma.$transaction(async (tx) => {
     const pedido = await tx.pedido.findUnique({ where: { id: Number(pedidoId) } });
     if (!pedido) throw { status: 404, message: "Pedido no encontrado" };
 
     // Si el monto supera el saldo, el excedente pasa a los próximos pedidos
     // con saldo del mismo cliente (del más antiguo al más nuevo)
-    let excedente = Math.max(0, Number(monto) - pedido.saldo);
+    let excedente = Math.max(0, r2(montoTotal - pedido.saldo));
     const reparto = [];
     if (excedente > 0) {
       const otros = await tx.pedido.findMany({
-        where: { clienteId: pedido.clienteId, activo: true, saldo: { gt: 0 }, id: { not: pedido.id } },
+        where: { clienteId: pedido.clienteId, activo: true, saldo: { gte: 0.01 }, id: { not: pedido.id } },
         orderBy: { nroOrden: "asc" },
       });
       for (const otro of otros) {
         if (excedente <= 0) break;
-        const aplicado = Math.min(excedente, otro.saldo);
+        const aplicado = r2(Math.min(excedente, otro.saldo));
         reparto.push({ pedido: otro, monto: aplicado });
-        excedente -= aplicado;
+        excedente = r2(excedente - aplicado);
       }
     }
 
     // Lo que no se pudo repartir queda en el pedido original
-    const montoOriginal = Number(monto) - reparto.reduce((s, r) => s + r.monto, 0);
+    const montoOriginal = r2(montoTotal - reparto.reduce((s, r) => s + r.monto, 0));
     const aplicaciones = [{ pedido, monto: montoOriginal }, ...reparto];
 
     const pagos = [];
@@ -61,12 +65,12 @@ router.post("/", async (req, res) => {
       });
 
       // Actualizar saldo del pedido
-      const nuevoTotalPagado = a.pedido.totalPagado + a.monto;
+      const nuevoTotalPagado = r2(a.pedido.totalPagado + a.monto);
       await tx.pedido.update({
         where: { id: a.pedido.id },
         data: {
           totalPagado: nuevoTotalPagado,
-          saldo:       Math.max(0, a.pedido.total - nuevoTotalPagado),
+          saldo:       saldoDe(a.pedido.total, nuevoTotalPagado),
         },
       });
 
@@ -90,8 +94,8 @@ router.delete("/:id", async (req, res) => {
     await tx.pedido.update({
       where: { id: pedido.id },
       data: {
-        totalPagado: pedido.totalPagado - pago.monto,
-        saldo:       pedido.saldo + pago.monto,
+        totalPagado: r2(pedido.totalPagado - pago.monto),
+        saldo:       saldoDe(pedido.total, pedido.totalPagado - pago.monto),
       },
     });
   });
